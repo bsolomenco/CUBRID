@@ -3909,8 +3909,10 @@ pt_show_binopcode (PT_OP_TYPE n)
       return "schema_def";
     case PT_CONV_TZ:
       return "conv_tz";
+    case PT_OP_CAN_CAST:
+        return "can_cast";
     default:
-      return "unknown opcode";
+        return "unknown opcode";
     }
 }
 
@@ -12105,6 +12107,15 @@ pt_print_expr (PARSER_CONTEXT * parser, PT_NODE * p)
       q = pt_append_varchar (parser, q, r1);
       q = pt_append_nulstring (parser, q, ")");
       break;
+
+    case PT_OP_CAN_CAST:
+        q = pt_append_nulstring(parser, q, " can_cast(");
+        r1 = pt_print_bytes(parser, p->info.expr.arg1);
+        q = pt_append_varchar(parser, q, r1);
+        q = pt_append_nulstring(parser, q, ", ");
+        q = pt_append_nulstring(parser, q, pt_show_type_enum(p->info.expr.cast_type->type_enum));
+        q = pt_append_nulstring(parser, q, ")");
+        break;
     }
 
   for (t = p->or_next; t; t = t->or_next)
@@ -17957,6 +17968,8 @@ pt_is_const_expr_node (PT_NODE * node)
 	case PT_WIDTH_BUCKET:
 	  return (pt_is_const_expr_node (node->info.expr.arg1) && pt_is_const_expr_node (node->info.expr.arg2)
 		  && pt_is_const_expr_node (node->info.expr.arg3));
+    case PT_OP_CAN_CAST:
+        return pt_is_const_expr_node(node->info.expr.arg1);
 	default:
 	  return false;
 	}

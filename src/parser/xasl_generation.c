@@ -1113,12 +1113,12 @@ pt_make_pred_expr_pred (const PRED_EXPR * arg1, const PRED_EXPR * arg2, const BO
       pred = regu_pred_alloc ();
 
       if (pred)
-	{
-	  pred->type = T_PRED;
-	  pred->pe.pred.lhs = (PRED_EXPR *) arg1;
-	  pred->pe.pred.rhs = (PRED_EXPR *) arg2;
-	  pred->pe.pred.bool_op = bop;
-	}
+        {
+          pred->type = T_PRED;
+          pred->pe.pred.lhs = (PRED_EXPR *) arg1;
+          pred->pe.pred.rhs = (PRED_EXPR *) arg2;
+          pred->pe.pred.bool_op = bop;
+        }
     }
 
   return pred;
@@ -1801,7 +1801,16 @@ pt_to_pred_expr_local_with_arg (PARSER_CONTEXT * parser, PT_NODE * node, int *ar
 		  }
 	      }
 	      break;
-
+            case PT_OP_CAN_CAST:
+            {
+              regu_variable_node* reguVarNode = pt_to_regu_variable(parser, node->info.expr.arg1, UNBOX_AS_VALUE);
+              pred = regu_pred_alloc();
+              pred->type = T_PRED_CAN_CAST;
+              pred->pe.pred.bool_op = B_OP_CAN_CAST;
+              pred->pe.canCast.regu = reguVarNode;
+              pred->pe.canCast.type = pt_type_enum_to_db(node->info.expr.cast_type->type_enum);
+              break;
+            }
 	      /* this is an error ! */
 	    default:
 	      pred = NULL;
@@ -8739,7 +8748,12 @@ pt_to_regu_variable (PARSER_CONTEXT * parser, PT_NODE * node, UNBOX unbox)
 	      regu = pt_make_regu_insert (parser, node);
 	      break;
 
-	    default:
+            case PT_OP_CAN_CAST:
+              domain = pt_xasl_data_type_to_domain(parser, node->info.expr.cast_type);
+              regu = pt_make_regu_arith(NULL, r2, NULL, T_OP_CAN_CAST, domain);
+              break;
+
+            default:
 	      /* force error */
 	      regu = NULL;
 	    }

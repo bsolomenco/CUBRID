@@ -1673,8 +1673,22 @@ eval_pred (THREAD_ENTRY * thread_p, PRED_EXPR * pr, VAL_DESCR * vd, OID * obj_oi
 
   switch (pr->type)
     {
-    case T_PRED:
-      switch (pr->pe.pred.bool_op)
+      case T_PRED_CAN_CAST:
+      {
+        if(fetch_peek_dbval(thread_p, pr->pe.canCast.regu, vd, NULL, obj_oid, NULL, &peek_val1) != NO_ERROR)
+        {
+          result = V_ERROR;
+          break;
+        }
+        DB_VALUE dstDbVal = { 0 };
+        db_make_null(&dstDbVal);
+        TP_DOMAIN* dstDomain = tp_domain_resolve_default(pr->pe.canCast.type);
+        TP_DOMAIN_STATUS domainStatus = tp_value_cast(peek_val1, &dstDbVal, dstDomain, false);
+        result = (domainStatus==DOMAIN_COMPATIBLE ? V_TRUE : V_FALSE);
+        break;
+      }
+      case T_PRED:
+        switch (pr->pe.pred.bool_op)
 	{
 	case B_AND:
 	  /* 'pt_to_pred_expr()' will generate right-linear tree */

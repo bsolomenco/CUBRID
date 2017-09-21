@@ -10244,7 +10244,8 @@ pt_is_operator_logical (PT_OP_TYPE op)
     case PT_SUPERSETEQ:
     case PT_SUPERSET:
     case PT_RANGE:
-      return true;
+    case PT_OP_CAN_CAST:
+        return true;
     default:
       return false;
     }

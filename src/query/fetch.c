@@ -649,6 +649,12 @@ fetch_peek_arith (THREAD_ENTRY * thread_p, REGU_VARIABLE * regu_var, VAL_DESCR *
 	  goto error;
 	}
       break;
+    case T_OP_CAN_CAST:
+      if (fetch_peek_dbval(thread_p, arithptr->rightptr, vd, NULL, obj_oid, tpl, &peek_right) != NO_ERROR)
+      {
+        goto error;
+      }
+      break;
 
     default:
       er_set (ER_ERROR_SEVERITY, ARG_FILE_LINE, ER_QPROC_INVALID_XASLNODE, 0);

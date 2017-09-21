@@ -4129,6 +4129,13 @@ stx_build_pred_expr (THREAD_ENTRY * thread_p, char *ptr, PRED_EXPR * pred_expr)
 	}
       break;
 
+    case T_PRED_CAN_CAST:
+      ptr = or_unpack_int(ptr, &offset);
+      pred_expr->pe.canCast.regu = stx_restore_regu_variable(thread_p, &xasl_unpack_info->packed_xasl[offset]);
+      ptr = or_unpack_int(ptr, &tmp);
+      pred_expr->pe.canCast.type = DB_TYPE(tmp);
+      break;
+
     default:
       stx_set_xasl_errcode (thread_p, ER_QPROC_INVALID_XASLNODE);
       return NULL;

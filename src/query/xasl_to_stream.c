@@ -4146,6 +4146,16 @@ xts_process_pred_expr (char *ptr, const PRED_EXPR * pred_expr)
       ptr = or_pack_int (ptr, offset);
       break;
 
+    case T_PRED_CAN_CAST:
+      offset = xts_save_regu_variable(pred_expr->pe.canCast.regu);
+      if (offset == ER_FAILED)
+      {
+        return NULL;
+      }
+      ptr = or_pack_int(ptr, offset);
+      ptr = or_pack_int(ptr, pred_expr->pe.canCast.type);
+      break;
+
     default:
       xts_Xasl_errcode = ER_QPROC_INVALID_XASLNODE;
       return NULL;
@@ -6131,6 +6141,15 @@ xts_sizeof_pred_expr (const PRED_EXPR * pred_expr)
 
     case T_NOT_TERM:
       size += PTR_SIZE;
+      break;
+
+    case T_PRED_CAN_CAST:
+      tmp_size = xts_sizeof_regu_variable(pred_expr->pe.canCast.regu) + OR_INT_SIZE/*canCast.type*/;
+      if (tmp_size == ER_FAILED)
+      {
+        return ER_FAILED;
+      }
+      size += tmp_size;
       break;
 
     default:

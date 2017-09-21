@@ -4940,8 +4940,25 @@ pt_get_expression_definition (const PT_OP_TYPE op, EXPRESSION_DEFINITION * def)
       def->overloads_count = num;
       break;
 
+    case PT_OP_CAN_CAST:
+        /* arg1 */
+        sig.arg1_type.is_generic = true;  
+        sig.arg1_type.val.generic_type = PT_GENERIC_TYPE_ANY;
+
+        /* arg2 */
+        sig.arg2_type.is_generic = true;  
+        sig.arg2_type.val.generic_type = PT_GENERIC_TYPE_PRIMITIVE;
+
+        /* return type */
+        sig.return_type.is_generic  = false;
+        sig.return_type.val.type    = PT_TYPE_LOGICAL;
+
+        def->overloads[0] = sig;
+        def->overloads_count = 1;
+        break;
+
     default:
-      return false;
+        return false;
     }
 
   assert (def->overloads_count <= MAX_OVERLOADS);
@@ -8993,7 +9010,8 @@ pt_is_able_to_determine_return_type (const PT_OP_TYPE op)
     case PT_CRC32:
     case PT_DISK_SIZE:
     case PT_SCHEMA_DEF:
-      return true;
+    case PT_OP_CAN_CAST     :
+        return true;
 
     default:
       return false;
@@ -14020,6 +14038,16 @@ pt_evaluate_db_value_expr (PARSER_CONTEXT * parser, PT_NODE * expr, PT_OP_TYPE o
 
   switch (op)
     {
+      case PT_OP_CAN_CAST:
+      {
+        DB_VALUE dstDbVal = { 0 };
+        db_make_null(&dstDbVal);
+        TP_DOMAIN* dstDomain = pt_type_enum_to_db_domain(expr->info.expr.cast_type->type_enum);
+        TP_DOMAIN_STATUS domainStatus = tp_value_cast(arg1, &dstDbVal, dstDomain, false);
+        db_make_int(result, domainStatus == DOMAIN_COMPATIBLE);
+        break;
+      }
+
     case PT_NOT:
       if (typ1 == DB_TYPE_NULL)
 	{
@@ -19879,28 +19907,91 @@ pt_fold_const_expr (PARSER_CONTEXT * parser, PT_NODE * expr, void *arg)
 	  return expr;
 	}
     }
-  else if (opd1
-	   && ((opd1->node_type == PT_VALUE
-		&& (op != PT_CAST || PT_EXPR_INFO_IS_FLAGED (expr, PT_EXPR_INFO_CAST_SHOULD_FOLD))
-		&& (!opd2 || opd2->node_type == PT_VALUE) && (!opd3 || opd3->node_type == PT_VALUE))
-	       || ((opd1->type_enum == PT_TYPE_NA || opd1->type_enum == PT_TYPE_NULL)
-		   && op != PT_CASE && op != PT_TO_CHAR && op != PT_TO_NUMBER && op != PT_TO_DATE && op != PT_TO_TIME
-		   && op != PT_TO_TIMESTAMP && op != PT_TO_DATETIME && op != PT_NULLIF && op != PT_COALESCE
-		   && op != PT_NVL && op != PT_NVL2 && op != PT_DECODE && op != PT_IFNULL && op != PT_TO_DATETIME_TZ
-		   && op != PT_TO_TIMESTAMP_TZ && op != PT_TO_TIME_TZ)
-	       || (opd2 && (opd2->type_enum == PT_TYPE_NA || opd2->type_enum == PT_TYPE_NULL)
-		   && op != PT_CASE && op != PT_TO_CHAR && op != PT_TO_NUMBER && op != PT_TO_DATE && op != PT_TO_TIME
-		   && op != PT_TO_TIMESTAMP && op != PT_TO_DATETIME && op != PT_BETWEEN && op != PT_NOT_BETWEEN
-		   && op != PT_SYS_CONNECT_BY_PATH && op != PT_NULLIF && op != PT_COALESCE && op != PT_NVL
-		   && op != PT_NVL2 && op != PT_DECODE && op != PT_IFNULL && op != PT_IF
-		   && (op != PT_RANGE || !opd2->or_next) && op != PT_TO_DATETIME_TZ && op != PT_TO_TIMESTAMP_TZ
-		   && op != PT_TO_TIME_TZ)
-	       || (opd3 && (opd3->type_enum == PT_TYPE_NA || opd3->type_enum == PT_TYPE_NULL)
-		   && op != PT_BETWEEN && op != PT_NOT_BETWEEN && op != PT_NVL2 && op != PT_IF)
-	       || (opd2 && opd3 && op == PT_IF && (opd2->type_enum == PT_TYPE_NA || opd2->type_enum == PT_TYPE_NULL)
-		   && (opd3->type_enum == PT_TYPE_NA || opd3->type_enum == PT_TYPE_NULL))
-	       /* width_bucket special case */
-	       || (op == PT_WIDTH_BUCKET && pt_is_const_foldable_width_bucket (parser, expr))))
+    else if(
+        opd1
+        &&
+        (
+            (
+                opd1->node_type == PT_VALUE 
+                && (op != PT_CAST || PT_EXPR_INFO_IS_FLAGED (expr, PT_EXPR_INFO_CAST_SHOULD_FOLD)) 
+                && (!opd2 || opd2->node_type == PT_VALUE) 
+                && (!opd3 || opd3->node_type == PT_VALUE)
+            )
+            ||
+            (
+                (opd1->type_enum == PT_TYPE_NA || opd1->type_enum == PT_TYPE_NULL)
+                && op != PT_CASE 
+                && op != PT_TO_CHAR 
+                && op != PT_TO_NUMBER 
+                && op != PT_TO_DATE 
+                && op != PT_TO_TIME
+                && op != PT_TO_TIMESTAMP 
+                && op != PT_TO_DATETIME 
+                && op != PT_NULLIF 
+                && op != PT_COALESCE
+                && op != PT_NVL 
+                && op != PT_NVL2 
+                && op != PT_DECODE 
+                && op != PT_IFNULL 
+                && op != PT_TO_DATETIME_TZ
+                && op != PT_TO_TIMESTAMP_TZ 
+                && op != PT_TO_TIME_TZ
+            )
+            ||
+            (
+                opd2
+                && (opd2->type_enum == PT_TYPE_NA || opd2->type_enum == PT_TYPE_NULL)
+                && op != PT_CASE 
+                && op != PT_TO_CHAR 
+                && op != PT_TO_NUMBER 
+                && op != PT_TO_DATE 
+                && op != PT_TO_TIME
+                && op != PT_TO_TIMESTAMP 
+                && op != PT_TO_DATETIME 
+                && op != PT_BETWEEN 
+                && op != PT_NOT_BETWEEN
+                && op != PT_SYS_CONNECT_BY_PATH 
+                && op != PT_NULLIF 
+                && op != PT_COALESCE 
+                && op != PT_NVL
+                && op != PT_NVL2 
+                && op != PT_DECODE 
+                && op != PT_IFNULL 
+                && op != PT_IF
+                && (op != PT_RANGE || !opd2->or_next) 
+                && op != PT_TO_DATETIME_TZ 
+                && op != PT_TO_TIMESTAMP_TZ
+                && op != PT_TO_TIME_TZ
+            )
+            ||
+            (
+                opd3 
+                && (opd3->type_enum == PT_TYPE_NA || opd3->type_enum == PT_TYPE_NULL)
+                && op != PT_BETWEEN 
+                && op != PT_NOT_BETWEEN 
+                && op != PT_NVL2 
+                && op != PT_IF
+            )
+            ||
+            (
+                opd2 
+                && opd3 
+                && op == PT_IF 
+                && (opd2->type_enum == PT_TYPE_NA || opd2->type_enum == PT_TYPE_NULL)
+                && (opd3->type_enum == PT_TYPE_NA || opd3->type_enum == PT_TYPE_NULL)
+            )
+            ||
+            (
+              op == PT_OP_CAN_CAST
+              //&& opd2 && opd2->type_enum == PT_TYPE_INTEGER//??? PT_DATA_TYPE
+              && !opd2
+              && !opd3
+            )
+            /* width_bucket special case */
+            ||
+            (op == PT_WIDTH_BUCKET && pt_is_const_foldable_width_bucket (parser, expr))
+        )
+    )
     {
       PT_MISC_TYPE qualifier = (PT_MISC_TYPE) 0;
       TP_DOMAIN *domain;
@@ -19931,8 +20022,7 @@ pt_fold_const_expr (PARSER_CONTEXT * parser, PT_NODE * expr, void *arg)
 	  goto end;
 	}
 
-      if (pt_evaluate_db_value_expr (parser, expr, op, arg1, arg2, arg3, &dbval_res, domain, opd1, opd2, opd3,
-				     qualifier))
+      if (pt_evaluate_db_value_expr (parser, expr, op, arg1, arg2, arg3, &dbval_res, domain, opd1, opd2, opd3, qualifier))
 	{
 	  result = pt_dbval_to_value (parser, &dbval_res);
 	  if (result->data_type == NULL && result->type_enum != PT_TYPE_NULL)

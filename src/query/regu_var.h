@@ -136,7 +136,8 @@ typedef enum
 {
   T_PRED = 1,
   T_EVAL_TERM,
-  T_NOT_TERM
+  T_NOT_TERM,
+  T_PRED_CAN_CAST,
 } TYPE_PRED_EXPR;
 
 typedef enum
@@ -145,7 +146,8 @@ typedef enum
   B_OR,
   B_XOR,
   B_IS,
-  B_IS_NOT
+  B_IS_NOT,
+  B_OP_CAN_CAST,
 } BOOL_OP;
 
 struct pred
@@ -160,7 +162,8 @@ typedef enum
   T_COMP_EVAL_TERM = 1,
   T_ALSM_EVAL_TERM,
   T_LIKE_EVAL_TERM,
-  T_RLIKE_EVAL_TERM
+  T_RLIKE_EVAL_TERM,
+  T_EVALTERM_CAN_CAST,
 } TYPE_EVAL_TERM;
 
 typedef enum
@@ -257,6 +260,11 @@ struct pred_expr
     PRED pred;
     EVAL_TERM eval_term;
     PRED_EXPR *not_term;
+    struct CanCast
+    {
+      REGU_VARIABLE* regu;
+      DB_TYPE        type;
+    } canCast;
   } pe;
   TYPE_PRED_EXPR type;
 };

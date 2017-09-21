@@ -1048,7 +1048,8 @@ typedef enum
   T_CURRENT_TIMESTAMP,
   T_CURRENT_DATE,
   T_CURRENT_TIME,
-  T_CONV_TZ
+  T_CONV_TZ,
+  T_OP_CAN_CAST,
 } OPERATOR_TYPE;		/* arithmetic operator types */
 
 typedef enum

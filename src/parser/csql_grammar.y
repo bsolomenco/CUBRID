@@ -131,11 +131,13 @@ extern int yybuffer_pos;
 #define COLUMN_CONSTRAINT_COMMENT       (0x80)
 
 #ifdef PARSER_DEBUG
-#define DBG_PRINT printf("rule matched at line: %d\n", __LINE__);
+#define DBG(format, ...) printf("DBG [%s(%d)] " format, __FILE__, __LINE__, __VA_ARGS__)
+#define DBG_PRINT printf("rule matched at line: %d\n", __LINE__)
 #define PRINT_(a) printf(a)
 #define PRINT_1(a, b) printf(a, b)
 #define PRINT_2(a, b, c) printf(a, b, c)
 #else
+#define DBG(format, ...)
 #define DBG_PRINT
 #define PRINT_(a)
 #define PRINT_1(a, b)
@@ -1008,6 +1010,8 @@ int g_original_buffer_len;
 %type <node> limit_expr
 %type <node> limit_term
 %type <node> limit_factor
+%type <node> can_cast_func
+
 /*}}}*/
 
 /* define rule type (cptr) */
@@ -1089,6 +1093,7 @@ int g_original_buffer_len;
 %token BREADTH
 %token BY
 %token CALL
+%token tokCAN_CAST
 %token CASCADE
 %token CASCADED
 %token CASE
@@ -1645,7 +1650,7 @@ stmt_list
 			#endif
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| stmt %dprec 2
 		{{
 
@@ -1667,7 +1672,7 @@ stmt_list
 			#endif
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -1705,7 +1710,7 @@ stmt
 			      }
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 		{{
 
 			parser_initialize_parser_context ();
@@ -1736,7 +1741,7 @@ stmt
 			allow_attribute_ordering = false;
 			parser_hidden_incr_list = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	stmt_
 		{{
 
@@ -1782,7 +1787,7 @@ stmt
 			      }
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 		{{
 
 			PT_NODE *node = $3;
@@ -1801,13 +1806,13 @@ stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ';'
 		{{
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 stmt_
 	: create_stmt
@@ -1896,7 +1901,7 @@ stmt_
 			$$ = dt;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ATTACH
 		{ push_msg(MSGCAT_SYNTAX_INVALID_ATTACH); }
 	  unsigned_integer
@@ -1913,7 +1918,7 @@ stmt_
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PREPARE
 		{ push_msg(MSGCAT_SYNTAX_INVALID_PREPARE); }
 	  opt_to COMMIT unsigned_integer
@@ -1930,7 +1935,7 @@ stmt_
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| EXECUTE
 		{ push_msg(MSGCAT_SYNTAX_INVALID_EXECUTE); }
 	  DEFERRED TRIGGER trigger_spec_list
@@ -1947,7 +1952,7 @@ stmt_
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SCOPE
 		{ push_msg(MSGCAT_SYNTAX_INVALID_SCOPE); }
 	  trigger_action opt_from_table_spec_list
@@ -1965,7 +1970,7 @@ stmt_
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| vacuum_stmt
 		{ $$ = $1; }
 
@@ -1983,7 +1988,7 @@ stmt_
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SET Time ZONE
 		{ push_msg(MSGCAT_SYNTAX_INVALID_SET_TIMEZONE); }
 	  char_string_literal
@@ -1998,7 +2003,7 @@ stmt_
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -2027,7 +2032,7 @@ set_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SET OPTIMIZATION
 		{ push_msg(MSGCAT_SYNTAX_INVALID_SET_OPT_COST); }
 	  COST opt_of char_string_literal opt_of_to_eq literal_
@@ -2046,7 +2051,7 @@ set_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SET
 		{ push_msg(MSGCAT_SYNTAX_INVALID_SET_SYS_PARAM); }
 	  SYSTEM PARAMETERS char_string_literal_list
@@ -2059,7 +2064,7 @@ set_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SET
 		{ push_msg(MSGCAT_SYNTAX_INVALID_SET_TRAN); }
 	  TRANSACTION transaction_mode_list
@@ -2076,7 +2081,7 @@ set_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SET TRIGGER
 		{ push_msg(MSGCAT_SYNTAX_INVALID_SET_TRIGGER_TRACE); }
 	  TRACE trace_spec
@@ -2094,7 +2099,7 @@ set_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SET TRIGGER
 		{ push_msg(MSGCAT_SYNTAX_INVALID_SET_TRIGGER_DEPTH); }
 	  opt_maximum DEPTH depth_spec
@@ -2112,7 +2117,7 @@ set_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SET session_variable_assignment_list
 		{{
 
@@ -2125,7 +2130,7 @@ set_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SET NAMES BINARY
 		{{
 
@@ -2152,7 +2157,7 @@ set_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SET
 		{ push_msg(MSGCAT_SYNTAX_INVALID_SET_NAMES); }
 	  NAMES char_string_literal
@@ -2170,7 +2175,7 @@ set_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SET
 		{ push_msg(MSGCAT_SYNTAX_INVALID_SET_NAMES); }
 	  NAMES IdName
@@ -2201,7 +2206,7 @@ set_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SET TRACE query_trace_spec opt_trace_output_format
 		{{
 
@@ -2215,33 +2220,33 @@ set_stmt
 
 			$$ = node;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 query_trace_spec
 	: ON_
 		{{
 			$$ = PT_TRACE_ON;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| OFF_
 		{{
 			$$ = PT_TRACE_OFF;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_trace_output_format
 	: /* empty */
 		{{
 			$$ = PT_TRACE_FORMAT_TEXT;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| OUTPUT TEXT
 		{{
 			$$ = PT_TRACE_FORMAT_TEXT;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| OUTPUT JSON
 		{{
 			$$ = PT_TRACE_FORMAT_JSON;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 session_variable_assignment_list
@@ -2251,7 +2256,7 @@ session_variable_assignment_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 
 	| session_variable_assignment
 		{{
@@ -2259,7 +2264,7 @@ session_variable_assignment_list
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 session_variable_assignment
@@ -2272,14 +2277,14 @@ session_variable_assignment
 			$$ = expr;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| session_variable_definition
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 session_variable_definition
@@ -2292,7 +2297,7 @@ session_variable_definition
 			$$ = expr;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 session_variable_expression
@@ -2306,7 +2311,7 @@ session_variable_expression
 			$$ = expr;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 session_variable_list
@@ -2316,14 +2321,14 @@ session_variable_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| session_variable
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 session_variable
@@ -2348,7 +2353,7 @@ session_variable
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 		
 get_stmt
@@ -2368,7 +2373,7 @@ get_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| GET OPTIMIZATION
 		{ push_msg(MSGCAT_SYNTAX_INVALID_GET_OPT_LEVEL); }
 	  LEVEL into_clause_opt
@@ -2385,7 +2390,7 @@ get_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| GET OPTIMIZATION
 		{ push_msg(MSGCAT_SYNTAX_INVALID_GET_OPT_COST); }
 	  COST opt_of char_string_literal into_clause_opt
@@ -2402,7 +2407,7 @@ get_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| GET TRANSACTION
 		{ push_msg(MSGCAT_SYNTAX_INVALID_GET_TRAN_ISOL); }
 	  ISOLATION LEVEL into_clause_opt
@@ -2420,7 +2425,7 @@ get_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| GET TRANSACTION
 		{ push_msg(MSGCAT_SYNTAX_INVALID_GET_TRAN_LOCK); }
 	  LOCK_ TIMEOUT into_clause_opt
@@ -2438,7 +2443,7 @@ get_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| GET TRIGGER
 		{ push_msg(MSGCAT_SYNTAX_INVALID_GET_TRIGGER_TRACE); }
 	  TRACE into_clause_opt
@@ -2456,7 +2461,7 @@ get_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| GET TRIGGER
 		{ push_msg(MSGCAT_SYNTAX_INVALID_GET_TRIGGER_DEPTH); }
 	  opt_maximum DEPTH into_clause_opt
@@ -2474,7 +2479,7 @@ get_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -2538,7 +2543,7 @@ create_stmt
 
 			$$ = qc;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CREATE 					/* 1 */
 	  opt_or_replace				/* 2 */
 	  of_view_vclass 				/* 3 */
@@ -2580,7 +2585,7 @@ create_stmt
 			$$ = qc;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CREATE					/* 1 */
 		{					/* 2 */
 			PT_NODE* node = parser_new_node (this_parser, PT_CREATE_INDEX);
@@ -2718,7 +2723,7 @@ create_stmt
 			  }
 		      $$ = node;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CREATE
 		{ push_msg(MSGCAT_SYNTAX_INVALID_CREATE_USER); }
 	  USER
@@ -2744,7 +2749,7 @@ create_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CREATE 					/* 1 */
 		{ push_msg(MSGCAT_SYNTAX_INVALID_CREATE_TRIGGER); }	/* 2 */
 	  TRIGGER 					/* 3 */
@@ -2780,7 +2785,7 @@ create_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CREATE					/* 1 */
 		{ push_msg(MSGCAT_SYNTAX_INVALID_CREATE_SERIAL); }	/* 2 */
 	  SERIAL 					/* 3 */
@@ -2825,7 +2830,7 @@ create_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CREATE						/* 1 */
 	  opt_or_replace                /* 2 */
 		{ push_msg(MSGCAT_SYNTAX_INVALID_CREATE_PROCEDURE); }		/* 3 */
@@ -2852,7 +2857,7 @@ create_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CREATE                        /* 1 */
 	  opt_or_replace                /* 2 */
 		{ push_msg(MSGCAT_SYNTAX_INVALID_CREATE_FUNCTION); }		/* 3 */
@@ -2880,14 +2885,14 @@ create_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CREATE IdName
 		{{
 
 			push_msg (MSGCAT_SYNTAX_INVALID_CREATE);
 			csql_yyerror_explicit (@2.first_line, @2.first_column);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CREATE					/* 1 */
 		{					/* 2 */
 			PT_NODE* qc = parser_new_node(this_parser, PT_CREATE_ENTITY);
@@ -2914,7 +2919,7 @@ create_stmt
 			$$ = qc;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CREATE					/* 1 */
 		{					/* 2 */
 			PT_NODE* qc = parser_new_node(this_parser, PT_CREATE_ENTITY);
@@ -2943,7 +2948,7 @@ create_stmt
 			$$ = qc;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_serial_option_list
@@ -3054,7 +3059,7 @@ serial_option_list
 
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_serial_option
 		{{
 			/* container order
@@ -3111,7 +3116,7 @@ serial_option_list
 
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 of_serial_option
@@ -3120,37 +3125,37 @@ of_serial_option
 			container_3 ctn;
 			SET_CONTAINER_3(ctn, FROM_NUMBER(SERIAL_START), $1, NULL);
 			$$ = ctn;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| serial_increment
 		{{
 			container_3 ctn;
 			SET_CONTAINER_3(ctn, FROM_NUMBER(SERIAL_INC), $1, NULL);
 			$$ = ctn;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| serial_min
 		{{
 			container_3 ctn;
 			SET_CONTAINER_3(ctn, FROM_NUMBER(SERIAL_MIN), CONTAINER_AT_0($1), CONTAINER_AT_1($1));
 			$$ = ctn;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| serial_max
 		{{
 			container_3 ctn;
 			SET_CONTAINER_3(ctn, FROM_NUMBER(SERIAL_MAX), CONTAINER_AT_0($1), CONTAINER_AT_1($1));
 			$$ = ctn;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_cycle_nocycle
 		{{
 			container_3 ctn;
 			SET_CONTAINER_3(ctn, FROM_NUMBER(SERIAL_CYCLE), CONTAINER_AT_0($1), CONTAINER_AT_1($1));
 			$$ = ctn;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_cached_num
 		{{
 			container_3 ctn;
 			SET_CONTAINER_3(ctn, FROM_NUMBER(SERIAL_CACHE), CONTAINER_AT_0($1), CONTAINER_AT_1($1));
 			$$ = ctn;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -3160,13 +3165,13 @@ opt_replace
 
 			$$ = PT_CREATE_SELECT_NO_ACTION;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| REPLACE
 		{{
 
 			$$ = PT_CREATE_SELECT_REPLACE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 alter_stmt
@@ -3191,7 +3196,7 @@ alter_stmt
 
 			parser_save_alter_node (node);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	  alter_clause_cubrid_specific
 		{{
 
@@ -3204,7 +3209,7 @@ alter_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ALTER						/* 1 */
 		{					/* 2 */
 			PT_NODE* node = parser_new_node(this_parser, PT_ALTER);
@@ -3267,7 +3272,7 @@ alter_stmt
 			$$ = $6;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ALTER
 	  USER
 	  identifier
@@ -3293,7 +3298,7 @@ alter_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ALTER
 	  TRIGGER
 	  identifier_list
@@ -3321,7 +3326,7 @@ alter_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ALTER						/* 1 */
 	  TRIGGER					/* 2 */
 	  identifier				/* 3 */
@@ -3345,7 +3350,7 @@ alter_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ALTER                                /* 1 */
 	  SERIAL                               /* 2 */
 	  identifier                           /* 3 */
@@ -3407,7 +3412,7 @@ alter_stmt
 					MSGCAT_SEMANTIC_SERIAL_ALTER_NO_OPTION, 0);
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ALTER						/* 1 */
 		{					/* 2 */
 			PT_NODE* node = parser_new_node(this_parser, PT_ALTER_INDEX);
@@ -3490,7 +3495,7 @@ alter_stmt
 			    PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ALTER				/* 1 */
 	  INDEX				/* 2 */
 	  identifier			/* 3 */
@@ -3525,7 +3530,7 @@ alter_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ALTER
 	  view_or_vclass
 	  class_name
@@ -3550,7 +3555,7 @@ alter_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ALTER
 	  view_or_vclass
 	  class_name
@@ -3570,7 +3575,7 @@ alter_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ALTER						/* 1 */
 	  procedure_or_function		/* 2 */
 	  identifier				/* 3 */
@@ -3598,7 +3603,7 @@ alter_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 	
 view_or_vclass
@@ -3613,7 +3618,7 @@ alter_clause_list
 			$$ = parser_make_link ($1, parser_get_alter_node ());
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| /* The first node in the list is the one that was pushed for hints. */
 		{
 
@@ -3626,7 +3631,7 @@ alter_clause_list
 			$$ = parser_get_alter_node ();
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 prepare_alter_node
@@ -3636,7 +3641,7 @@ prepare_alter_node
 			PT_NODE *node = parser_new_node (this_parser, PT_ALTER);
 			parser_save_alter_node (node);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 only_class_name
@@ -3661,7 +3666,7 @@ rename_stmt
 			$$ = $3;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| RENAME TRIGGER class_name AS class_name
 		{{
 
@@ -3676,7 +3681,7 @@ rename_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 rename_class_list
@@ -3686,14 +3691,14 @@ rename_class_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| rename_class_pair
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 rename_class_pair
@@ -3711,7 +3716,7 @@ rename_class_pair
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 procedure_or_function
@@ -3720,13 +3725,13 @@ procedure_or_function
 
 			$$ = 1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| FUNCTION
 		{{
 
 			$$ = 2;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_owner_clause
@@ -3754,7 +3759,7 @@ truncate_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 do_stmt
@@ -3784,7 +3789,7 @@ do_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 drop_stmt
@@ -3807,7 +3812,7 @@ drop_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DROP						/* 1 */
 		{					/* 2 */
 			PT_NODE* node = parser_new_node(this_parser, PT_DROP_INDEX);
@@ -3872,7 +3877,7 @@ drop_stmt
 			    PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DROP USER identifier
 		{{
 
@@ -3886,7 +3891,7 @@ drop_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DROP TRIGGER identifier_list
 		{{
 
@@ -3906,7 +3911,7 @@ drop_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DROP DEFERRED TRIGGER trigger_spec_list
 		{{
 
@@ -3920,7 +3925,7 @@ drop_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DROP VARIABLE_ identifier_list
 		{{
 
@@ -3930,7 +3935,7 @@ drop_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DROP SERIAL opt_if_exists identifier
 		{{
 
@@ -3943,7 +3948,7 @@ drop_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DROP PROCEDURE identifier_list
 		{{
 
@@ -3959,7 +3964,7 @@ drop_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DROP FUNCTION identifier_list
 		{{
 
@@ -3975,7 +3980,7 @@ drop_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| deallocate_or_drop PREPARE identifier
 		{{
 
@@ -3990,7 +3995,7 @@ drop_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| deallocate_or_drop VARIABLE_ session_variable_list
 		{{
 
@@ -4003,7 +4008,7 @@ drop_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 deallocate_or_drop
@@ -4018,14 +4023,14 @@ opt_reverse
 			parser_save_is_reverse (false);
 			$$ = false;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| REVERSE
 		{{
 
 			parser_save_is_reverse (true);
 			$$ = true;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_unique
@@ -4034,13 +4039,13 @@ opt_unique
 
 			$$ = false;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| UNIQUE
 		{{
 
 			$$ = true;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_index_column_name_list
@@ -4049,14 +4054,14 @@ opt_index_column_name_list
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| index_column_name_list
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 index_column_name_list
@@ -4074,7 +4079,7 @@ index_column_name_list
 		      $$ = $2;
 		      PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 update_statistics_stmt
@@ -4091,7 +4096,7 @@ update_statistics_stmt
 			$$ = ups;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| UPDATE STATISTICS ON_ ALL CLASSES opt_with_fullscan
 		{{
 
@@ -4105,7 +4110,7 @@ update_statistics_stmt
 			$$ = ups;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| UPDATE STATISTICS ON_ CATALOG CLASSES opt_with_fullscan
 		{{
 
@@ -4119,7 +4124,7 @@ update_statistics_stmt
 			$$ = ups;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 only_class_name_list
@@ -4129,14 +4134,14 @@ only_class_name_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| only_class_name
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_with_fullscan
@@ -4145,13 +4150,13 @@ opt_with_fullscan
 
                         $$ = 0;
 
-                DBG_PRINT}}
+                DBG_PRINT;}}
         | WITH FULLSCAN
                 {{
 
                         $$ = 1;
 
-                DBG_PRINT}}
+                DBG_PRINT;}}
         ;
 
 opt_of_to_eq
@@ -4170,7 +4175,7 @@ opt_level_spec
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| OFF_
 		{{
 
@@ -4180,28 +4185,28 @@ opt_level_spec
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| unsigned_integer
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| param_
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| host_param_input
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 char_string_literal_list
@@ -4211,14 +4216,14 @@ char_string_literal_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| char_string_literal
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 table_spec_list
@@ -4228,14 +4233,14 @@ table_spec_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| table_spec
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 extended_table_spec_list
@@ -4249,7 +4254,7 @@ extended_table_spec_list
 			SET_CONTAINER_2 (ctn, parser_make_link (n1, n2), FROM_NUMBER (number));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| extended_table_spec_list join_table_spec
 		{{
 
@@ -4259,7 +4264,7 @@ extended_table_spec_list
 			SET_CONTAINER_2 (ctn, parser_make_link (n1, n2), FROM_NUMBER (1));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '(' extended_table_spec_list join_table_spec ')'
 		{{
 
@@ -4269,7 +4274,7 @@ extended_table_spec_list
 			SET_CONTAINER_2 (ctn, parser_make_link (n1, n2), FROM_NUMBER (1));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| table_spec
 		{{
 
@@ -4277,7 +4282,7 @@ extended_table_spec_list
 			SET_CONTAINER_2 (ctn, $1, FROM_NUMBER (0));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 join_table_spec
@@ -4290,7 +4295,7 @@ join_table_spec
 			$$ = sopt;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| opt_of_inner_left_right JOIN table_spec join_condition
 		{{
 
@@ -4319,7 +4324,7 @@ join_table_spec
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 			parser_restore_pseudoc ();
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NATURAL opt_of_inner_left_right JOIN table_spec
 		{{
 
@@ -4334,7 +4339,7 @@ join_table_spec
 			  }
 			$$ = sopt;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 join_condition
@@ -4342,13 +4347,13 @@ join_condition
 		{{
 			parser_save_and_set_pseudoc (0);
 			$$ = PT_JOIN_NONE;   /* just return NULL */
-		DBG_PRINT}} 
+		DBG_PRINT;}} 
 	| ON_
 		{{
 			parser_save_and_set_pseudoc (0);
 			parser_save_and_set_wjc (1);
 			parser_save_and_set_ic (1);
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	  search_condition
 		{{
 			PT_NODE *condition = $3;
@@ -4369,7 +4374,7 @@ join_condition
 			
 			$$ = condition;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-		DBG_PRINT}}
+		DBG_PRINT;}}
 
 
 	;
@@ -4380,25 +4385,25 @@ opt_of_inner_left_right
 
 			$$ = PT_JOIN_INNER;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INNER opt_outer
 		{{
 
 			$$ = PT_JOIN_INNER;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| LEFT opt_outer
 		{{
 
 			$$ = PT_JOIN_LEFT_OUTER;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| RIGHT opt_outer
 		{{
 
 			$$ = PT_JOIN_RIGHT_OUTER;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_outer
@@ -4413,14 +4418,14 @@ table_spec
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| original_table_spec %dprec 2
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 
 original_table_spec
 	: class_spec opt_as_identifier_attr_name opt_table_spec_index_hint_list 
@@ -4525,7 +4530,7 @@ original_table_spec
 			$$ = ent;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| meta_class_spec opt_as_identifier_attr_name
 		{{
 
@@ -4552,7 +4557,7 @@ original_table_spec
 			$$ = ent;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| subquery opt_as_identifier_attr_name
 		{{
 
@@ -4582,7 +4587,7 @@ original_table_spec
 			$$ = ent;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TABLE '(' expression_ ')' opt_as_identifier_attr_name
 		{{
 
@@ -4600,7 +4605,7 @@ original_table_spec
 			$$ = ent;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_table_spec_index_hint
@@ -4617,7 +4622,7 @@ opt_table_spec_index_hint
 			$$ = $4;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| FORCE index_or_key '(' identifier_list ')'
 		{{
 
@@ -4632,7 +4637,7 @@ opt_table_spec_index_hint
 			$$ = $4;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| IGNORE_ index_or_key '(' identifier_list ')'
 		{{
 
@@ -4647,7 +4652,7 @@ opt_table_spec_index_hint
 			  $$ = $4;
 			  PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_table_spec_index_hint_list
@@ -4657,21 +4662,21 @@ opt_table_spec_index_hint_list
 			$$ = 0;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| opt_table_spec_index_hint_list ',' opt_table_spec_index_hint
 		{{
 
 			$$ = parser_make_link($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| opt_table_spec_index_hint
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_as_identifier_attr_name
@@ -4682,7 +4687,7 @@ opt_as_identifier_attr_name
 			SET_CONTAINER_2 (ctn, NULL, NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| opt_as identifier '(' identifier_list ')'
 		{{
 
@@ -4690,7 +4695,7 @@ opt_as_identifier_attr_name
 			SET_CONTAINER_2 (ctn, $2, $4);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| opt_as identifier
 		{{
 
@@ -4698,7 +4703,7 @@ opt_as_identifier_attr_name
 			SET_CONTAINER_2 (ctn, $2, NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_as
@@ -4713,14 +4718,14 @@ class_spec_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| class_spec
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 class_spec
@@ -4730,14 +4735,14 @@ class_spec
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '(' only_all_class_spec_list ')'
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 only_all_class_spec_list
@@ -4751,14 +4756,14 @@ only_all_class_spec_list
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| only_all_class_spec
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 meta_class_spec
@@ -4778,7 +4783,7 @@ meta_class_spec
 			$$ = ocs;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 only_all_class_spec
@@ -4800,7 +4805,7 @@ only_all_class_spec
 			$$ = ocs;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ALL class_name '(' EXCEPT class_spec_list ')'
 		{{
 
@@ -4816,7 +4821,7 @@ only_all_class_spec
 			$$ = acs;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ALL class_name
 		{{
 
@@ -4831,7 +4836,7 @@ only_all_class_spec
 			$$ = acs;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 class_name
@@ -4854,14 +4859,14 @@ class_name
 			$$ = name_node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| identifier
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 class_name_list
@@ -4870,15 +4875,13 @@ class_name_list
 
 			$$ = parser_make_link($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| class_name
 		{{
 		
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_partition_spec
@@ -4890,7 +4893,7 @@ opt_partition_spec
 		{{
 			$$ = $3;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_class_type
@@ -4898,32 +4901,27 @@ opt_class_type
 		{{
 
 			$$ = PT_EMPTY;
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| VCLASS
 		{{
 
 			$$ = PT_VCLASS;
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| VIEW
 		{{
 
 			$$ = PT_VCLASS;
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CLASS
 		{{
 
 			$$ = PT_CLASS;
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TABLE
 		{{
 
 			$$ = PT_CLASS;
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_table_type
@@ -4932,19 +4930,19 @@ opt_table_type
 
 			$$ = PT_EMPTY;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CLASS
 		{{
 
 			$$ = PT_CLASS;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TABLE
 		{{
 
 			$$ = PT_CLASS;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_cascade_constraints
@@ -4953,13 +4951,13 @@ opt_cascade_constraints
 
 			$$ = false;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CASCADE CONSTRAINTS
 		{{
 
 			$$ = true;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 alter_clause_for_alter_list
@@ -4982,7 +4980,7 @@ alter_clause_for_alter_list
 			    alt->info.alter.code = PT_CHANGE_OWNER;
 			    alt->info.alter.alter_clause.user.user_name = $3;
 			  }
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| charset_spec opt_collation
 		{{
 			PT_NODE *node = parser_get_alter_node();
@@ -5012,7 +5010,7 @@ alter_clause_for_alter_list
 				  }
 			      }
 			  }
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| collation_spec
 		{{
 			PT_NODE *node = parser_get_alter_node();
@@ -5036,7 +5034,7 @@ alter_clause_for_alter_list
 				node->info.alter.alter_clause.collation.collation_id = coll_id;
 			      }
 			  }
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| class_comment_spec
 		{{
 			PT_NODE *node = parser_get_alter_node();
@@ -5045,7 +5043,7 @@ alter_clause_for_alter_list
 			    node->info.alter.code = PT_CHANGE_TABLE_COMMENT;
 			    node->info.alter.alter_clause.comment.tbl_comment = $1;
 			  }
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 alter_clause_cubrid_specific
@@ -5066,7 +5064,7 @@ alter_clause_cubrid_specific
 			    alt->info.alter.super.resolution_list = $1;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_resolution_list_for_alter
@@ -5085,7 +5083,7 @@ resolution_list_for_alter
 			    alt->info.alter.super.resolution_list = $1;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 alter_rename_clause_mysql_specific
@@ -5100,7 +5098,7 @@ alter_rename_clause_mysql_specific
 			    node->info.alter.alter_clause.rename.new_name = $2;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 alter_auto_increment_mysql_specific
@@ -5124,7 +5122,7 @@ alter_auto_increment_mysql_specific
 			    node->info.alter.alter_clause.auto_increment.start_value = val;
 			  }
 
-	      DBG_PRINT}}
+	      DBG_PRINT;}}
 	;
 
 alter_rename_clause_allow_multiple
@@ -5151,7 +5149,7 @@ alter_rename_clause_allow_multiple
 			    node->info.alter.alter_clause.rename.old_name = $3;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 alter_rename_clause_cubrid_specific
@@ -5174,7 +5172,7 @@ alter_rename_clause_cubrid_specific
 			    node->info.alter.alter_clause.rename.old_name = $2;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| File file_path_name AS file_path_name
 		{{
 
@@ -5188,7 +5186,7 @@ alter_rename_clause_cubrid_specific
 			    node->info.alter.alter_clause.rename.old_name = $2;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_of_attr_column_method
@@ -5197,24 +5195,24 @@ opt_of_attr_column_method
 
 			$$ = PT_EMPTY;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ATTRIBUTE
 		{{
 
 			$$ = PT_ATTRIBUTE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COLUMN
 		{{
 
 			$$ = PT_ATTRIBUTE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| METHOD
 		{{
 
 			$$ = PT_METHOD;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 	
 opt_class
@@ -5223,13 +5221,13 @@ opt_class
 
 			$$ = 0;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CLASS
 		{{
 
 			$$ = 1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_identifier
@@ -5237,15 +5235,13 @@ opt_identifier
 		{{
 
 			$$ = NULL;
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| identifier
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 alter_add_clause_for_alter_list
@@ -5263,7 +5259,7 @@ alter_add_clause_for_alter_list
 			    node->info.alter.alter_clause.attr_mthd.attr_def_list = $5;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CLASS ATTRIBUTE
 		{ parser_attr_type = PT_META_ATTR; }
 	  attr_def
@@ -5277,7 +5273,7 @@ alter_add_clause_for_alter_list
 			    node->info.alter.alter_clause.attr_mthd.attr_def_list = $4;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| opt_of_column_attribute
 	  		{ allow_attribute_ordering = true; }
 	  '(' attr_def_list ')'
@@ -5291,7 +5287,7 @@ alter_add_clause_for_alter_list
 			    node->info.alter.alter_clause.attr_mthd.attr_def_list = $4;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| opt_of_column_attribute
 			{ allow_attribute_ordering = true; }
 	  attr_def
@@ -5305,7 +5301,7 @@ alter_add_clause_for_alter_list
 			    node->info.alter.alter_clause.attr_mthd.attr_def_list = $3;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 alter_add_clause_cubrid_specific
@@ -5320,7 +5316,7 @@ alter_add_clause_cubrid_specific
 			    node->info.alter.alter_clause.attr_mthd.mthd_file_list = $2;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| METHOD method_def_list
 		{{
 
@@ -5331,7 +5327,7 @@ alter_add_clause_cubrid_specific
 			    node->info.alter.alter_clause.attr_mthd.mthd_def_list = $2;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| METHOD method_def_list File method_file_list
 		{{
 
@@ -5344,7 +5340,7 @@ alter_add_clause_cubrid_specific
 			    node->info.alter.alter_clause.attr_mthd.mthd_def_list = $2;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SUPERCLASS only_class_name_list
 		{{
 
@@ -5356,7 +5352,7 @@ alter_add_clause_cubrid_specific
 			    node->info.alter.super.sup_class_list = $2;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| QUERY csql_query opt_vclass_comment_spec
 		{{
 
@@ -5369,7 +5365,7 @@ alter_add_clause_cubrid_specific
 			    node->info.alter.alter_clause.query.view_comment = $3;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CLASS ATTRIBUTE
 		{ parser_attr_type = PT_META_ATTR; }
 	  attr_def_list_with_commas
@@ -5383,7 +5379,7 @@ alter_add_clause_cubrid_specific
 			    node->info.alter.alter_clause.attr_mthd.attr_def_list = $4;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| opt_of_column_attribute attr_def_list_with_commas
 		{{
 
@@ -5394,7 +5390,7 @@ alter_add_clause_cubrid_specific
 			    node->info.alter.alter_clause.attr_mthd.attr_def_list = $2;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_of_column_attribute
@@ -5411,7 +5407,7 @@ add_partition_clause
 			node->info.alter.code = PT_ADD_HASHPARTITION;
 			node->info.alter.alter_clause.partition.size = $2;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '(' partition_def_list ')'
 		{{
 
@@ -5419,7 +5415,7 @@ add_partition_clause
 			node->info.alter.code = PT_ADD_PARTITION;
 			node->info.alter.alter_clause.partition.parts = $2;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 alter_drop_clause_mysql_specific
@@ -5436,7 +5432,7 @@ alter_drop_clause_mysql_specific
 			    node->info.alter.constraint_list = $4;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PRIMARY KEY
 		{{
 
@@ -5447,7 +5443,7 @@ alter_drop_clause_mysql_specific
 			    node->info.alter.code = PT_DROP_PRIMARY_CLAUSE;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| FOREIGN KEY identifier
 		{{
 
@@ -5459,7 +5455,7 @@ alter_drop_clause_mysql_specific
 			    node->info.alter.constraint_list = $3;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 alter_drop_clause_for_alter_list
@@ -5474,7 +5470,7 @@ alter_drop_clause_for_alter_list
 			    node->info.alter.alter_clause.attr_mthd.attr_mthd_name_list = $2;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CONSTRAINT identifier
 		{{
 
@@ -5486,7 +5482,7 @@ alter_drop_clause_for_alter_list
 			    node->info.alter.constraint_list = $2;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PARTITION identifier_list
 		{{
 
@@ -5498,7 +5494,7 @@ alter_drop_clause_for_alter_list
 			    node->info.alter.alter_clause.partition.name_list = $2;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 alter_drop_clause_cubrid_specific
@@ -5513,7 +5509,7 @@ alter_drop_clause_cubrid_specific
 			    node->info.alter.alter_clause.attr_mthd.attr_mthd_name_list = $2;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| File method_file_list
 		{{
 
@@ -5525,7 +5521,7 @@ alter_drop_clause_cubrid_specific
 			    node->info.alter.alter_clause.attr_mthd.mthd_file_list = $2;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SUPERCLASS only_class_name_list
 		{{
 
@@ -5537,7 +5533,7 @@ alter_drop_clause_cubrid_specific
 			    node->info.alter.super.sup_class_list = $2;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| QUERY query_number_list
 		{{
 
@@ -5549,7 +5545,7 @@ alter_drop_clause_cubrid_specific
 			    node->info.alter.alter_clause.query.query_no_list = $2;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| QUERY
 		{{
 
@@ -5561,7 +5557,7 @@ alter_drop_clause_cubrid_specific
 			    node->info.alter.alter_clause.query.query_no_list = NULL;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 normal_or_class_attr_list_with_commas
@@ -5571,14 +5567,14 @@ normal_or_class_attr_list_with_commas
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| normal_or_class_attr ',' normal_or_class_attr
 		{{
 
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 alter_modify_clause_for_alter_list
@@ -5597,7 +5593,7 @@ alter_modify_clause_for_alter_list
 			    /* no name change for MODIFY */
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CLASS ATTRIBUTE
 	  { allow_attribute_ordering = true; }
 	  attr_def_one
@@ -5616,7 +5612,7 @@ alter_modify_clause_for_alter_list
 				info.attr_def.attr_type = PT_META_ATTR;
 			  }
 
-		DBG_PRINT}}		
+		DBG_PRINT;}}		
 	;
 
 alter_change_clause_for_alter_list
@@ -5641,7 +5637,7 @@ alter_change_clause_for_alter_list
 			      node->info.alter.alter_clause.attr_mthd.attr_old_name->info.name.meta_class;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 alter_change_clause_cubrid_specific
@@ -5656,7 +5652,7 @@ alter_change_clause_cubrid_specific
 			    node->info.alter.alter_clause.attr_mthd.mthd_def_list = $2;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| QUERY unsigned_integer csql_query opt_vclass_comment_spec
 		{{
 
@@ -5670,7 +5666,7 @@ alter_change_clause_cubrid_specific
 			    node->info.alter.alter_clause.query.view_comment = $4;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| QUERY csql_query opt_vclass_comment_spec
 		{{
 
@@ -5684,7 +5680,7 @@ alter_change_clause_cubrid_specific
 			    node->info.alter.alter_clause.query.view_comment = $3;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| File file_path_name AS file_path_name
 		{{
 
@@ -5698,7 +5694,7 @@ alter_change_clause_cubrid_specific
 			    node->info.alter.alter_clause.rename.old_name = $2;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 normal_or_class_attr
@@ -5713,7 +5709,7 @@ normal_or_class_attr
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 query_number_list
@@ -5723,14 +5719,14 @@ query_number_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| unsigned_integer
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 alter_column_clause_mysql_specific
@@ -5824,7 +5820,7 @@ alter_column_clause_mysql_specific
 			    alter_node->info.alter.alter_clause.ch_attr_def.data_default_list = node;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 normal_column_or_class_attribute
@@ -5839,7 +5835,7 @@ normal_column_or_class_attribute
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CLASS ATTRIBUTE identifier
 		{{
 
@@ -5851,7 +5847,7 @@ normal_column_or_class_attribute
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 insert_or_replace_stmt
@@ -5869,7 +5865,7 @@ insert_or_replace_stmt
 			$$ = ins;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| insert_name_clause insert_stmt_value_clause into_clause_opt
 		{{
 
@@ -5884,7 +5880,7 @@ insert_or_replace_stmt
 			$$ = ins;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| replace_name_clause insert_stmt_value_clause into_clause_opt
 		{{
 
@@ -5899,7 +5895,7 @@ insert_or_replace_stmt
 			$$ = ins;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| insert_set_stmt on_duplicate_key_update
 		{{
 
@@ -5912,7 +5908,7 @@ insert_or_replace_stmt
 			$$ = ins;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| insert_set_stmt into_clause_opt
 		{{
 
@@ -5926,7 +5922,7 @@ insert_or_replace_stmt
 			$$ = ins;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| replace_set_stmt into_clause_opt
 		{{
 
@@ -5940,7 +5936,7 @@ insert_or_replace_stmt
 			$$ = ins;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 insert_set_stmt
@@ -6010,7 +6006,7 @@ insert_set_stmt_header
 			$$ = ins;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 insert_assignment_list
@@ -6022,7 +6018,7 @@ insert_assignment_list
 
 			$$ = $1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| insert_assignment_list ',' identifier '=' DEFAULT
 		{{
 			PT_NODE *arg = parser_copy_tree (this_parser, $3);
@@ -6037,7 +6033,7 @@ insert_assignment_list
 
 			$$ = $1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| identifier '=' expression_
 		{{
 
@@ -6046,7 +6042,7 @@ insert_assignment_list
 
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| identifier '=' DEFAULT
 		{{
 
@@ -6062,7 +6058,7 @@ insert_assignment_list
 
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 on_duplicate_key_update
@@ -6073,7 +6069,7 @@ on_duplicate_key_update
 			$$ = $5;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 insert_expression
@@ -6090,7 +6086,7 @@ insert_expression
 			$$ = ins;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '(' insert_name_clause insert_expression_value_clause into_clause_opt ')'
 		{{
 
@@ -6105,7 +6101,7 @@ insert_expression
 			$$ = ins;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 insert_name_clause
@@ -6157,7 +6153,7 @@ insert_name_clause_header
 			$$ = ins;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_attr_list
@@ -6166,20 +6162,20 @@ opt_attr_list
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '(' ')'
 		{{
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '(' identifier_list ')'
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_path_attr_list
@@ -6188,20 +6184,20 @@ opt_path_attr_list
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '(' ')'
 		{{
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '(' simple_path_id_list ')'
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 insert_stmt_value_clause
@@ -6211,7 +6207,7 @@ insert_stmt_value_clause
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| csql_query_without_values_query
 		{{
 
@@ -6219,7 +6215,7 @@ insert_stmt_value_clause
 			$$ = nls;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 insert_expression_value_clause
@@ -6229,7 +6225,7 @@ insert_expression_value_clause
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DEFAULT opt_values
 		{{
 
@@ -6237,7 +6233,7 @@ insert_expression_value_clause
 			$$ = nls;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 of_value_values
@@ -6260,22 +6256,19 @@ into_clause_opt
 		{{
 
 			$$ = NULL;
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INTO to_param
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TO to_param
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 insert_value_clause_list
@@ -6285,14 +6278,14 @@ insert_value_clause_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| insert_value_clause
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 insert_value_clause
@@ -6303,7 +6296,7 @@ insert_value_clause
 			$$ = nls;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '('')'
 		{{
 
@@ -6321,7 +6314,7 @@ insert_value_clause
 			$$ = nls;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DEFAULT opt_values
 		{{
 
@@ -6329,7 +6322,7 @@ insert_value_clause
 			$$ = nls;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 insert_value_list
@@ -6339,14 +6332,14 @@ insert_value_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| insert_value
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 insert_value
@@ -6356,14 +6349,14 @@ insert_value
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| normal_expression
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DEFAULT
 		{{
 
@@ -6373,7 +6366,7 @@ insert_value
 			$$ = parser_make_expression (this_parser, PT_DEFAULTF, NULL, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 show_stmt
@@ -6391,7 +6384,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SHOW
 	  opt_full
 	  TABLES
@@ -6409,7 +6402,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SHOW
 	  opt_full
 	  TABLES
@@ -6427,7 +6420,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SHOW
 	  opt_full
 	  COLUMNS
@@ -6446,7 +6439,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SHOW
 	  opt_full
 	  COLUMNS
@@ -6468,7 +6461,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SHOW
 	  opt_full
 	  COLUMNS
@@ -6490,7 +6483,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_describe_desc_explain
 	  identifier
 		{{
@@ -6504,7 +6497,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}		
+		DBG_PRINT;}}		
 	| of_describe_desc_explain
 	  identifier
 	  identifier
@@ -6519,7 +6512,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_describe_desc_explain
 	  identifier
 	  char_string_literal
@@ -6540,7 +6533,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SHOW
 	  COLLATION
 		{{
@@ -6552,7 +6545,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SHOW
 	  COLLATION
 	  LIKE
@@ -6570,7 +6563,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SHOW
 	  COLLATION
 	  WHERE
@@ -6587,7 +6580,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SHOW
 	  CREATE
 	  TABLE
@@ -6600,7 +6593,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SHOW
 	  CREATE
 	  VIEW
@@ -6615,7 +6608,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SHOW
 	  GRANTS
 	  For
@@ -6633,7 +6626,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SHOW
 	  GRANTS
 	  opt_for_current_user
@@ -6646,7 +6639,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}						
+		DBG_PRINT;}}						
 	| SHOW
 	  of_index_indexes_keys
 	  of_from_in
@@ -6660,7 +6653,7 @@ show_stmt
 
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SHOW EXEC STATISTICS ALL
 		{{
 			PT_NODE *node = NULL;
@@ -6670,7 +6663,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}						
+		DBG_PRINT;}}						
 	| SHOW EXEC STATISTICS
 		{{
 			PT_NODE *node = NULL;
@@ -6680,7 +6673,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}						
+		DBG_PRINT;}}						
 	| SHOW TRACE
 		{{
 			PT_NODE *node = NULL;
@@ -6689,7 +6682,7 @@ show_stmt
 
 			$$ = node;
 
-		DBG_PRINT}}						
+		DBG_PRINT;}}						
 	| SHOW show_type
 		{{
 			int type = $2;
@@ -6698,7 +6691,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}						
+		DBG_PRINT;}}						
 	| SHOW show_type_of_like LIKE expression_
 		{{
 
@@ -6711,7 +6704,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}						
+		DBG_PRINT;}}						
 	| SHOW show_type_of_where WHERE search_condition
 		{{
 			const int like_where_syntax = 2;  /* is WHERE */
@@ -6723,7 +6716,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}						
+		DBG_PRINT;}}						
 	| SHOW show_type_arg1 OF arg_value
 		{{
 			int type = $2;
@@ -6733,7 +6726,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SHOW show_type_arg1_opt opt_arg_value
 		{{
 			PT_NODE *node = NULL;
@@ -6745,7 +6738,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SHOW show_type_arg_named of_or_where named_args
 		{{
 			PT_NODE *node = NULL;
@@ -6757,7 +6750,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SHOW show_type_id_dot_id OF identifier DOT identifier
 		{{
 			int type = $2;
@@ -6769,7 +6762,7 @@ show_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 kill_stmt
@@ -6785,7 +6778,7 @@ kill_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}						
+		DBG_PRINT;}}						
 	| KILL kill_type arg_value_list
 		{{
 			int type = $2;
@@ -6800,7 +6793,7 @@ kill_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 show_type
@@ -6970,11 +6963,11 @@ named_args
 	: named_arg
 		{{
 			$$ = $1;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| named_args AND named_arg
 		{{
 			$$ = parser_make_link ($1, $3);
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 named_arg
@@ -6984,7 +6977,7 @@ named_arg
 			node->info.named_arg.name = $1;
 			node->info.named_arg.value = $3;
 			$$ = node;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_arg_value
@@ -6993,7 +6986,6 @@ opt_arg_value
 			PT_NODE *node = parser_new_node (this_parser, PT_VALUE);
 			if (node)
 			  node->type_enum = PT_TYPE_NULL;
-
 			$$ = node;
 		}}
 	| OF arg_value
@@ -7009,29 +7001,29 @@ arg_value_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| arg_value
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 arg_value
 	: char_string_literal
 		{{
 			$$ = $1;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| unsigned_integer
 		{{
 			$$ = $1;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| identifier
 		{{
 			$$ = $1;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_full
@@ -7040,13 +7032,13 @@ opt_full
 
 			$$ = 0;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| FULL
 		{{
 
 			$$ = 1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 of_from_in
@@ -7189,7 +7181,7 @@ update_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| update_head
 	  OBJECT
 	  from_param
@@ -7207,7 +7199,7 @@ update_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -7219,16 +7211,16 @@ opt_of_where_cursor
 			SET_CONTAINER_2 (ctn, 0, NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| WHERE
 		{
 			parser_save_and_set_ic(1);
-			DBG_PRINT
+			DBG_PRINT;
 		}
 	  search_condition
 	  	{
 			parser_restore_ic();
-			DBG_PRINT
+			DBG_PRINT;
 		}
 		{{
 
@@ -7236,7 +7228,7 @@ opt_of_where_cursor
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (1), $3);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| WHERE CURRENT OF identifier
 		{{
 
@@ -7244,7 +7236,7 @@ opt_of_where_cursor
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (0), $4);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -7255,14 +7247,14 @@ of_class_spec_meta_class_spec
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| meta_class_spec
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_as_identifier
@@ -7271,21 +7263,21 @@ opt_as_identifier
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| AS identifier
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| identifier
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 update_assignment_list
@@ -7295,13 +7287,13 @@ update_assignment_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| update_assignment
 		{{
 
 			$$ = $1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 update_assignment
@@ -7311,7 +7303,7 @@ update_assignment
 			$$ = parser_make_expression (this_parser, PT_ASSIGN, $1, $3, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| simple_path_id '=' DEFAULT
 		{{
 
@@ -7325,7 +7317,7 @@ update_assignment
 			$$ = parser_make_expression (this_parser, PT_ASSIGN, $1, node_df, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| paren_path_expression_set '=' primary_w_collate
 		{{
 
@@ -7434,7 +7426,7 @@ update_assignment
 			      }
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 paren_path_expression_set
@@ -7453,7 +7445,7 @@ paren_path_expression_set
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 path_expression_list
@@ -7463,13 +7455,13 @@ path_expression_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| path_expression
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 delete_name
@@ -7481,7 +7473,7 @@ delete_name
 
 			$$ = node;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| identifier DOT '*'
 		{{
 
@@ -7490,7 +7482,7 @@ delete_name
 
 			$$ = node;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 delete_name_list
@@ -7499,13 +7491,13 @@ delete_name_list
 
 			$$ = parser_make_link ($1, $3);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| delete_name
 		{{
 
 			$$ = $1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 delete_from_using
@@ -7517,7 +7509,7 @@ delete_from_using
 
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| FROM delete_name_list USING extended_table_spec_list
 		{{
 
@@ -7526,7 +7518,7 @@ delete_from_using
 
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| FROM table_spec
 		{{
 
@@ -7535,7 +7527,7 @@ delete_from_using
 
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| table_spec
 		{{
 
@@ -7544,7 +7536,7 @@ delete_from_using
 
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 delete_stmt
@@ -7652,7 +7644,7 @@ delete_stmt
 			$$ = del;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 merge_stmt
@@ -7682,24 +7674,24 @@ merge_stmt
 			$$ = merge;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 merge_update_insert_clause
 	: merge_update_clause
 		{{
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| merge_insert_clause
 		{{
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| merge_update_clause
 	  merge_insert_clause
 		{{
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| merge_insert_clause
 	  merge_update_clause
 		{{
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 merge_update_clause
@@ -7721,7 +7713,7 @@ merge_update_clause
 			      }
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 merge_insert_clause
@@ -7739,7 +7731,7 @@ merge_insert_clause
 			    merge->info.merge.insert.search_cond = $8;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_merge_delete_clause
@@ -7748,14 +7740,14 @@ opt_merge_delete_clause
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DELETE_ WHERE search_condition
 		{{
 
 			$$ = $3;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 auth_stmt
@@ -7775,7 +7767,7 @@ auth_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| revoke_cmd on_class_list from_id_list
 		{{
 
@@ -7791,7 +7783,7 @@ auth_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| revoke_cmd from_id_list on_class_list
 		{{
 
@@ -7807,7 +7799,7 @@ auth_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 revoke_cmd
@@ -7842,7 +7834,7 @@ grant_head
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| grant_cmd to_id_list on_class_list
 		{{
 
@@ -7858,7 +7850,7 @@ grant_head
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_with_grant_option
@@ -7867,13 +7859,13 @@ opt_with_grant_option
 
 			$$ = 0;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| WITH GRANT OPTION
 		{{
 
 			$$ = 1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 on_class_list
@@ -7907,14 +7899,14 @@ author_cmd_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| authorized_cmd
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 authorized_cmd
@@ -7927,7 +7919,7 @@ authorized_cmd
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INSERT
 		{{
 
@@ -7942,7 +7934,7 @@ authorized_cmd
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INDEX
 		{{
 
@@ -7957,7 +7949,7 @@ authorized_cmd
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DELETE_
 		{{
 
@@ -7972,7 +7964,7 @@ authorized_cmd
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 
 	| UPDATE '(' identifier_list ')'
 		{{
@@ -7991,7 +7983,7 @@ authorized_cmd
 
 			$$ = node;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| UPDATE
 		{{
 
@@ -8006,7 +7998,7 @@ authorized_cmd
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ALTER
 		{{
 
@@ -8021,7 +8013,7 @@ authorized_cmd
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ADD
 		{{
 
@@ -8036,7 +8028,7 @@ authorized_cmd
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DROP
 		{{
 
@@ -8051,7 +8043,7 @@ authorized_cmd
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| EXECUTE
 		{{
 
@@ -8066,7 +8058,7 @@ authorized_cmd
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| REFERENCES
 		{{
 
@@ -8081,7 +8073,7 @@ authorized_cmd
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ALL PRIVILEGES
 		{{
 
@@ -8096,7 +8088,7 @@ authorized_cmd
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ALL
 		{{
 
@@ -8111,7 +8103,7 @@ authorized_cmd
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_password
@@ -8120,7 +8112,7 @@ opt_password
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PASSWORD
 		{ push_msg(MSGCAT_SYNTAX_INVALID_PASSWORD); }
 	  char_string_literal
@@ -8130,7 +8122,7 @@ opt_password
 			$$ = $3;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_groups
@@ -8139,7 +8131,7 @@ opt_groups
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| GROUPS
 		{ push_msg(MSGCAT_SYNTAX_INVALID_GROUPS); }
 	  identifier_list
@@ -8149,7 +8141,7 @@ opt_groups
 			$$ = $3;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_members
@@ -8158,7 +8150,7 @@ opt_members
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| MEMBERS
 		{ push_msg(MSGCAT_SYNTAX_INVALID_MEMBERS); }
 	  identifier_list
@@ -8168,7 +8160,7 @@ opt_members
 			$$ = $3;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 call_stmt
@@ -8188,7 +8180,7 @@ call_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_class_or_normal_attr_def_list
@@ -8197,14 +8189,14 @@ opt_class_or_normal_attr_def_list
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '(' class_or_normal_attr_def_list ')'
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_method_def_list
@@ -8213,14 +8205,14 @@ opt_method_def_list
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| METHOD method_def_list
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_method_files
@@ -8229,14 +8221,14 @@ opt_method_files
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| File method_file_list
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_inherit_resolution_list
@@ -8245,14 +8237,14 @@ opt_inherit_resolution_list
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| inherit_resolution_list
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_table_option_list
@@ -8261,14 +8253,14 @@ opt_table_option_list
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| table_option_list
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_partition_clause
@@ -8277,14 +8269,14 @@ opt_partition_clause
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| partition_clause
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_create_as_clause
@@ -8295,13 +8287,13 @@ opt_create_as_clause
 			SET_CONTAINER_2(ctn, NULL, NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| create_as_clause
 		{{
 
 			$$ = $1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 of_class_table_type
@@ -8310,13 +8302,13 @@ of_class_table_type
 
 			$$ = PT_CLASS;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TABLE
 		{{
 
 			$$ = PT_CLASS;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 of_view_vclass
@@ -8330,13 +8322,13 @@ opt_or_replace
 
 			$$ = 0;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| OR REPLACE
 		{{
 
 			$$ = 1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_if_not_exists
@@ -8345,13 +8337,13 @@ opt_if_not_exists
 
 			$$ = 0;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| IF NOT EXISTS
 		{{
 
 			$$ = 1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_if_exists
@@ -8360,13 +8352,13 @@ opt_if_exists
 
 			$$ = 0;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| IF EXISTS
 		{{
 
 			$$ = 1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_paren_view_attr_def_list
@@ -8375,14 +8367,14 @@ opt_paren_view_attr_def_list
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '(' view_attr_def_list ')'
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_as_query_list
@@ -8391,14 +8383,14 @@ opt_as_query_list
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| AS query_list
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_with_levels_clause
@@ -8407,25 +8399,25 @@ opt_with_levels_clause
 
 			$$ = PT_EMPTY;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| WITH LOCAL CHECK OPTION
 		{{
 
 			$$ = PT_LOCAL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| WITH CASCADED CHECK OPTION
 		{{
 
 			$$ = PT_CASCADED;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| WITH CHECK OPTION
 		{{
 
 			$$ = PT_CASCADED;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 query_list
@@ -8435,14 +8427,14 @@ query_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| csql_query
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 inherit_resolution_list
@@ -8452,14 +8444,14 @@ inherit_resolution_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INHERIT inherit_resolution
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 inherit_resolution
@@ -8483,7 +8475,7 @@ inherit_resolution
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| opt_class identifier OF identifier
 		{{
 
@@ -8503,7 +8495,7 @@ inherit_resolution
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 table_option_list
@@ -8513,21 +8505,21 @@ table_option_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| table_option_list table_option
 		{{
 
 			$$ = parser_make_link ($1, $2);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| table_option
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 table_option
@@ -8537,7 +8529,7 @@ table_option
 			$$ = pt_table_option (this_parser, PT_TABLE_OPTION_REUSE_OID, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| AUTO_INCREMENT '=' UNSIGNED_INTEGER
 		{{
 
@@ -8554,28 +8546,28 @@ table_option
 			$$ = pt_table_option (this_parser, PT_TABLE_OPTION_AUTO_INCREMENT, val);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		  DBG_PRINT}}
+		  DBG_PRINT;}}
 	| charset_spec
 		{{
 
 			$$ = pt_table_option (this_parser, PT_TABLE_OPTION_CHARSET, $1);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		  DBG_PRINT}}
+		  DBG_PRINT;}}
 	| collation_spec
 		{{
 
 			$$ = pt_table_option (this_parser, PT_TABLE_OPTION_COLLATION, $1);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		  DBG_PRINT}}
+		  DBG_PRINT;}}
 	| class_comment_spec
 		{{
 
 			$$ = pt_table_option (this_parser, PT_TABLE_OPTION_COMMENT, $1);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-	      DBG_PRINT}}
+	      DBG_PRINT;}}
 	;
 
 opt_subtable_clause
@@ -8584,21 +8576,21 @@ opt_subtable_clause
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| UNDER only_class_name_list
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| AS SUBCLASS OF only_class_name_list
 		{{
 
 			$$ = $4;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_constraint_id
@@ -8607,14 +8599,14 @@ opt_constraint_id
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CONSTRAINT identifier
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_constraint_opt_id
@@ -8623,14 +8615,14 @@ opt_constraint_opt_id
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CONSTRAINT opt_identifier
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 of_unique_foreign_check
@@ -8640,21 +8632,21 @@ of_unique_foreign_check
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| foreign_key_constraint
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| check_constraint
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_constraint_attr_list
@@ -8666,13 +8658,13 @@ opt_constraint_attr_list
 					 FROM_NUMBER (0));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| constraint_attr_list
 		{{
 
 			$$ = $1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 constraint_attr_list
@@ -8696,13 +8688,13 @@ constraint_attr_list
 
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| constraint_attr
 		{{
 
 			$$ = $1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 unique_constraint
@@ -8721,7 +8713,7 @@ unique_constraint
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| UNIQUE opt_of_index_key opt_identifier index_column_name_list
 		{{
 
@@ -8790,7 +8782,7 @@ unique_constraint
 
 			$$ = node;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 foreign_key_constraint
@@ -8822,7 +8814,7 @@ foreign_key_constraint
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 index_column_identifier_list
@@ -8832,14 +8824,14 @@ index_column_identifier_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| index_column_identifier
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 index_column_identifier
@@ -8853,7 +8845,7 @@ index_column_identifier
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_asc_or_desc
@@ -8862,19 +8854,19 @@ opt_asc_or_desc
 
 			$$ = 0;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ASC
 		{{
 
 			$$ = 0;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DESC
 		{{
 
 			$$ = 1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_paren_attr_list
@@ -8883,14 +8875,14 @@ opt_paren_attr_list
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '(' identifier_list ')'
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_ref_rule_list
@@ -8902,7 +8894,7 @@ opt_ref_rule_list
 					 FROM_NUMBER (PT_RULE_RESTRICT), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ref_rule_list
 		{{
 
@@ -8913,7 +8905,7 @@ opt_ref_rule_list
 			  ctn.c2 = FROM_NUMBER (PT_RULE_RESTRICT);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 ref_rule_list
@@ -8930,7 +8922,7 @@ ref_rule_list
 			ctn.c1 = FROM_NUMBER (PT_RULE_CASCADE);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ref_rule_list ON_ DELETE_ NO ACTION
 		{{
 
@@ -8944,7 +8936,7 @@ ref_rule_list
 			ctn.c1 = FROM_NUMBER (PT_RULE_NO_ACTION);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ref_rule_list ON_ DELETE_ RESTRICT
 		{{
 
@@ -8958,7 +8950,7 @@ ref_rule_list
 			ctn.c1 = FROM_NUMBER (PT_RULE_RESTRICT);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ref_rule_list ON_ DELETE_ SET Null
 		{{
 
@@ -8972,7 +8964,7 @@ ref_rule_list
 			ctn.c1 = FROM_NUMBER (PT_RULE_SET_NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ref_rule_list ON_ UPDATE NO ACTION
 		{{
 
@@ -8986,7 +8978,7 @@ ref_rule_list
 			ctn.c2 = FROM_NUMBER (PT_RULE_NO_ACTION);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ref_rule_list ON_ UPDATE RESTRICT
 		{{
 
@@ -9000,7 +8992,7 @@ ref_rule_list
 			ctn.c2 = FROM_NUMBER (PT_RULE_RESTRICT);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ref_rule_list ON_ UPDATE SET Null
 		{{
 
@@ -9014,7 +9006,7 @@ ref_rule_list
 			ctn.c2 = FROM_NUMBER (PT_RULE_SET_NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ON_ DELETE_ CASCADE
 		{{
 
@@ -9022,7 +9014,7 @@ ref_rule_list
 			SET_CONTAINER_3 (ctn, FROM_NUMBER (PT_RULE_CASCADE), NULL, NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ON_ DELETE_ NO ACTION
 		{{
 
@@ -9030,7 +9022,7 @@ ref_rule_list
 			SET_CONTAINER_3 (ctn, FROM_NUMBER (PT_RULE_NO_ACTION), NULL, NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ON_ DELETE_ RESTRICT
 		{{
 
@@ -9038,7 +9030,7 @@ ref_rule_list
 			SET_CONTAINER_3 (ctn, FROM_NUMBER (PT_RULE_RESTRICT), NULL, NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ON_ DELETE_ SET Null
 		{{
 
@@ -9046,7 +9038,7 @@ ref_rule_list
 			SET_CONTAINER_3 (ctn, FROM_NUMBER (PT_RULE_SET_NULL), NULL, NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ON_ UPDATE NO ACTION
 		{{
 
@@ -9054,7 +9046,7 @@ ref_rule_list
 			SET_CONTAINER_3 (ctn, NULL, FROM_NUMBER (PT_RULE_NO_ACTION), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ON_ UPDATE RESTRICT
 		{{
 
@@ -9062,7 +9054,7 @@ ref_rule_list
 			SET_CONTAINER_3 (ctn, NULL, FROM_NUMBER (PT_RULE_RESTRICT), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ON_ UPDATE SET Null
 		{{
 
@@ -9070,7 +9062,7 @@ ref_rule_list
 			SET_CONTAINER_3 (ctn, NULL, FROM_NUMBER (PT_RULE_SET_NULL), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -9089,7 +9081,7 @@ check_constraint
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -9105,7 +9097,7 @@ constraint_attr
 			ctn.c4 = FROM_NUMBER (0);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DEFERRABLE
 		{{
 
@@ -9116,7 +9108,7 @@ constraint_attr
 			ctn.c4 = FROM_NUMBER (0);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INITIALLY DEFERRED
 		{{
 
@@ -9127,7 +9119,7 @@ constraint_attr
 			ctn.c4 = FROM_NUMBER (1);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INITIALLY IMMEDIATE
 		{{
 
@@ -9138,7 +9130,7 @@ constraint_attr
 			ctn.c4 = FROM_NUMBER (0);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 method_def_list
@@ -9148,14 +9140,14 @@ method_def_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| method_def
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 method_def
@@ -9183,7 +9175,7 @@ method_def
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_method_def_arg_list
@@ -9192,20 +9184,20 @@ opt_method_def_arg_list
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '(' arg_type_list ')'
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '(' ')'
 		{{
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 arg_type_list
@@ -9215,14 +9207,14 @@ arg_type_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| inout_data_type
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 inout_data_type
@@ -9241,7 +9233,7 @@ inout_data_type
 			$$ = at;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_data_type
@@ -9252,13 +9244,13 @@ opt_data_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_NONE), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| data_type
 		{{
 
 			$$ = $1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_function_identifier
@@ -9267,14 +9259,14 @@ opt_function_identifier
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| FUNCTION identifier
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 method_file_list
@@ -9284,14 +9276,14 @@ method_file_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| file_path_name
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 file_path_name
@@ -9304,7 +9296,7 @@ file_path_name
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_class_attr_def_list
@@ -9313,7 +9305,7 @@ opt_class_attr_def_list
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CLASS
 	  ATTRIBUTE
 		{ parser_attr_type = PT_META_ATTR; }
@@ -9324,7 +9316,7 @@ opt_class_attr_def_list
 			$$ = $5;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 class_or_normal_attr_def_list
@@ -9334,14 +9326,14 @@ class_or_normal_attr_def_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| class_or_normal_attr_def
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 class_or_normal_attr_def
@@ -9351,14 +9343,14 @@ class_or_normal_attr_def
 			$$ = $3;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| attr_def
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 view_attr_def_list
@@ -9368,14 +9360,14 @@ view_attr_def_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| view_attr_def
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 view_attr_def
@@ -9385,7 +9377,7 @@ view_attr_def
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| identifier opt_comment_spec
 		{{
 
@@ -9402,7 +9394,7 @@ view_attr_def
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 attr_def_list_with_commas
@@ -9412,14 +9404,14 @@ attr_def_list_with_commas
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| attr_def ','  attr_def
 		{{
 
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 attr_def_list
@@ -9429,14 +9421,14 @@ attr_def_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| attr_def
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 attr_def
@@ -9446,21 +9438,21 @@ attr_def
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| attr_index_def
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| attr_def_one
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 attr_constraint_def
@@ -9523,7 +9515,7 @@ attr_constraint_def
 			$$ = constraint;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 attr_index_def
@@ -9589,7 +9581,7 @@ attr_index_def
 			node->info.index.column_names = col;
 			$$ = node;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 attr_def_one
@@ -9618,7 +9610,7 @@ attr_def_one
 
 			parser_save_attr_def_one (node);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	  opt_constraint_list_and_opt_column_comment
 	  opt_attr_ordering_info
 		{{
@@ -9636,7 +9628,7 @@ attr_def_one
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_attr_ordering_info
@@ -9645,7 +9637,7 @@ opt_attr_ordering_info
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| FIRST
 		{{
 
@@ -9664,7 +9656,7 @@ opt_attr_ordering_info
 
 			$$ = ord;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| AFTER identifier
 		{{
 
@@ -9683,7 +9675,7 @@ opt_attr_ordering_info
 
 			$$ = ord;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_constraint_list_and_opt_column_comment
@@ -9808,7 +9800,7 @@ column_unique_constraint_def
 
 			parser_make_link (node, constraint);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 column_primary_constraint_def
@@ -9842,7 +9834,7 @@ column_primary_constraint_def
 
 			parser_make_link (node, constraint);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 column_null_constraint_def
@@ -9874,7 +9866,7 @@ column_null_constraint_def
 
 			parser_make_link (node, constraint);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| opt_constraint_id NOT Null opt_constraint_attr_list
 		{{
 
@@ -9911,7 +9903,7 @@ column_null_constraint_def
 
 			parser_make_link (node, constraint);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 column_other_constraint_def
@@ -9944,7 +9936,7 @@ column_other_constraint_def
 
 			parser_make_link (node, constraint);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| opt_constraint_id			/* 1 */
 	  opt_foreign_key			/* 2 */
 	  REFERENCES				/* 3 */
@@ -9990,7 +9982,7 @@ column_other_constraint_def
 
 			parser_make_link (node, constraint);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 index_or_key
@@ -10054,7 +10046,7 @@ column_ai_constraint_def
 				       MSGCAT_SEMANTIC_CLASS_ATT_CANT_BE_AUTOINC);
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| AUTO_INCREMENT
 		{{
 
@@ -10071,7 +10063,7 @@ column_ai_constraint_def
 				       MSGCAT_SEMANTIC_CLASS_ATT_CANT_BE_AUTOINC);
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 column_shared_constraint_def
@@ -10091,7 +10083,7 @@ column_shared_constraint_def
 			attr_node->info.attr_def.data_default = node;
 			attr_node->info.attr_def.attr_type = PT_SHARED;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 column_default_constraint_def
@@ -10181,7 +10173,7 @@ column_default_constraint_def
 			attr_node = parser_get_attr_def_one ();
 			attr_node->info.attr_def.data_default = node;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 column_comment_def
@@ -10192,7 +10184,7 @@ column_comment_def
 			attr_node = parser_get_attr_def_one ();
 			attr_node->info.attr_def.comment = $2;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 transaction_mode_list
@@ -10202,14 +10194,14 @@ transaction_mode_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| transaction_mode						%dprec 2
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 transaction_mode
@@ -10292,7 +10284,7 @@ transaction_mode
 
 			$$ = tm;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ISOLATION LEVEL isolation_level_spec			%dprec 2
 		{{
 
@@ -10318,7 +10310,7 @@ transaction_mode
 
 			$$ = tm;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| LOCK_ TIMEOUT timeout_spec
 		{{
 
@@ -10332,7 +10324,7 @@ transaction_mode
 			$$ = tm;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -10346,7 +10338,7 @@ isolation_level_spec
 					 FROM_NUMBER (PT_NO_ISOLATION_LEVEL), FROM_NUMBER (0));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ASYNC WORKSPACE
 		{{
 
@@ -10355,7 +10347,7 @@ isolation_level_spec
 					 FROM_NUMBER (PT_NO_ISOLATION_LEVEL), FROM_NUMBER (1));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SERIALIZABLE
 		{{
 
@@ -10364,7 +10356,7 @@ isolation_level_spec
 					 FROM_NUMBER (PT_SERIALIZABLE), FROM_NUMBER (0));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CURSOR STABILITY
 		{{
 
@@ -10373,7 +10365,7 @@ isolation_level_spec
 					 FROM_NUMBER (PT_READ_COMMITTED), FROM_NUMBER (0));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| isolation_level_name								%dprec 1
 		{{
 
@@ -10386,7 +10378,7 @@ isolation_level_spec
 					 FROM_NUMBER (level), FROM_NUMBER (0));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| isolation_level_name of_schema_class 						%dprec 1
 		{{
 
@@ -10403,7 +10395,7 @@ isolation_level_spec
 					 FROM_NUMBER (error));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| isolation_level_name INSTANCES						%dprec 1
 		{{
 
@@ -10418,7 +10410,7 @@ isolation_level_spec
 					 FROM_NUMBER (0));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| isolation_level_name of_schema_class ',' isolation_level_name INSTANCES	%dprec 10
 		{{
 
@@ -10434,7 +10426,7 @@ isolation_level_spec
 					 FROM_NUMBER (error));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| isolation_level_name INSTANCES ',' isolation_level_name of_schema_class	%dprec 10
 		{{
 			container_4 ctn;
@@ -10449,7 +10441,7 @@ isolation_level_spec
 					 FROM_NUMBER (error));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 of_schema_class
@@ -10463,13 +10455,13 @@ isolation_level_name
 
 			$$ = PT_REPEATABLE_READ;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| READ COMMITTED
 		{{
 
 			$$ = PT_READ_COMMITTED;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 timeout_spec
@@ -10487,7 +10479,7 @@ timeout_spec
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| OFF_
 		{{
 
@@ -10502,35 +10494,35 @@ timeout_spec
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| unsigned_integer
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| unsigned_real
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| param_
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| host_param_input
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -10548,7 +10540,7 @@ transaction_stmt
 			$$ = comm;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COMMIT opt_work
 		{{
 
@@ -10556,7 +10548,7 @@ transaction_stmt
 			$$ = comm;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ROLLBACK opt_work TO opt_savepoint expression_
 		{{
 
@@ -10570,7 +10562,7 @@ transaction_stmt
 			$$ = roll;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ROLLBACK opt_work
 		{{
 
@@ -10578,7 +10570,7 @@ transaction_stmt
 			$$ = roll;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SAVEPOINT expression_
 		{{
 
@@ -10592,7 +10584,7 @@ transaction_stmt
 			$$ = svpt;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -10626,7 +10618,7 @@ evaluate_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 prepare_stmt
@@ -10644,7 +10636,7 @@ prepare_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 execute_stmt
@@ -10664,7 +10656,7 @@ execute_stmt
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_using
@@ -10673,7 +10665,7 @@ opt_using
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| USING 
 		{ parser_save_and_set_hvar (0); } 
 		execute_using_list 
@@ -10683,7 +10675,7 @@ opt_using
 			$$ = $3;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_status
@@ -10692,13 +10684,13 @@ opt_status
 
 			$$ = PT_MISC_DUMMY;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| trigger_status
 		{{
 
 			$$ = $1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 trigger_status
@@ -10707,13 +10699,13 @@ trigger_status
 
 			$$ = PT_ACTIVE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| STATUS INACTIVE
 		{{
 
 			$$ = PT_INACTIVE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_priority
@@ -10722,14 +10714,14 @@ opt_priority
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| trigger_priority
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 trigger_priority
@@ -10739,7 +10731,7 @@ trigger_priority
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_if_trigger_condition
@@ -10748,14 +10740,14 @@ opt_if_trigger_condition
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| IF trigger_condition
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 trigger_time
@@ -10764,19 +10756,19 @@ trigger_time
 
 			$$ = PT_BEFORE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| AFTER
 		{{
 
 			$$ = PT_AFTER;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DEFERRED
 		{{
 
 			$$ = PT_DEFERRED;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_trigger_action_time
@@ -10785,19 +10777,19 @@ opt_trigger_action_time
 
 			$$ = PT_MISC_DUMMY;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| AFTER
 		{{
 
 			$$ = PT_AFTER;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DEFERRED
 		{{
 
 			$$ = PT_DEFERRED;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 event_spec
@@ -10814,7 +10806,7 @@ event_spec
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| event_type event_target
 		{{
 
@@ -10829,7 +10821,7 @@ event_spec
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 event_type
@@ -10838,49 +10830,49 @@ event_type
 
 			$$ = PT_EV_INSERT;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| STATEMENT INSERT
 		{{
 
 			$$ = PT_EV_STMT_INSERT;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DELETE_
 		{{
 
 			$$ = PT_EV_DELETE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| STATEMENT DELETE_
 		{{
 
 			$$ = PT_EV_STMT_DELETE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| UPDATE
 		{{
 
 			$$ = PT_EV_UPDATE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| STATEMENT UPDATE
 		{{
 
 			$$ = PT_EV_STMT_UPDATE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COMMIT
 		{{
 
 			$$ = PT_EV_COMMIT;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ROLLBACK
 		{{
 
 			$$ = PT_EV_ROLLBACK;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 event_target
@@ -10898,7 +10890,7 @@ event_target
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ON_ identifier
 		{{
 
@@ -10912,7 +10904,7 @@ event_target
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 trigger_condition
@@ -10922,14 +10914,14 @@ trigger_condition
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| call_stmt
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 trigger_action
@@ -10946,7 +10938,7 @@ trigger_action
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INVALIDATE TRANSACTION
 		{{
 
@@ -10960,7 +10952,7 @@ trigger_action
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PRINT char_string_literal
 		{{
 
@@ -10975,7 +10967,7 @@ trigger_action
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| evaluate_stmt
 		{{
 
@@ -10990,7 +10982,7 @@ trigger_action
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| insert_or_replace_stmt
 		{{
 
@@ -11005,7 +10997,7 @@ trigger_action
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| update_stmt
 		{{
 
@@ -11020,7 +11012,7 @@ trigger_action
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| delete_stmt
 		{{
 
@@ -11035,7 +11027,7 @@ trigger_action
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| call_stmt
 		{{
 
@@ -11050,7 +11042,7 @@ trigger_action
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| merge_stmt
 		{{
 
@@ -11065,7 +11057,7 @@ trigger_action
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 trigger_spec_list
@@ -11082,7 +11074,7 @@ trigger_spec_list
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ALL TRIGGERS
 		{{
 
@@ -11096,7 +11088,7 @@ trigger_spec_list
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 trigger_status_or_priority_or_change_owner
@@ -11107,7 +11099,7 @@ trigger_status_or_priority_or_change_owner
 			SET_CONTAINER_3 (ctn, FROM_NUMBER ($1), NULL, NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| trigger_priority
 		{{
 
@@ -11115,7 +11107,7 @@ trigger_status_or_priority_or_change_owner
 			SET_CONTAINER_3 (ctn, FROM_NUMBER (PT_MISC_DUMMY), $1, NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| OWNER TO identifier
 		{{
 
@@ -11123,7 +11115,7 @@ trigger_status_or_priority_or_change_owner
 			SET_CONTAINER_3 (ctn, FROM_NUMBER (PT_MISC_DUMMY), NULL, $3);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_maximum
@@ -11146,7 +11138,7 @@ trace_spec
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| OFF_
 		{{
 
@@ -11161,28 +11153,28 @@ trace_spec
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| unsigned_integer
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| param_
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| host_param_input
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 depth_spec
@@ -11192,21 +11184,21 @@ depth_spec
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| param_
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| host_param_input
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 serial_start
@@ -11226,7 +11218,7 @@ serial_start
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 serial_increment
@@ -11246,7 +11238,7 @@ serial_increment
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -11268,7 +11260,7 @@ serial_min
 			SET_CONTAINER_2 (ctn, node, FROM_NUMBER (0));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NOMINVALUE
 		{{
 
@@ -11276,7 +11268,7 @@ serial_min
 			SET_CONTAINER_2 (ctn, NULL, FROM_NUMBER (1));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 serial_max
@@ -11297,7 +11289,7 @@ serial_max
 			SET_CONTAINER_2 (ctn, node, FROM_NUMBER (0));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NOMAXVALUE
 		{{
 
@@ -11305,7 +11297,7 @@ serial_max
 			SET_CONTAINER_2 (ctn, NULL, FROM_NUMBER (1));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 of_cycle_nocycle
@@ -11316,7 +11308,7 @@ of_cycle_nocycle
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (1), FROM_NUMBER (0));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NOCYCLE
 		{{
 
@@ -11324,7 +11316,7 @@ of_cycle_nocycle
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (0), FROM_NUMBER (1));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 of_cached_num
@@ -11335,14 +11327,14 @@ of_cached_num
 			SET_CONTAINER_2 (ctn, $2, FROM_NUMBER (0));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NOCACHE
 		{{
 			container_2 ctn;
 			SET_CONTAINER_2 (ctn, NULL, FROM_NUMBER (1));
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 integer_text
@@ -11351,13 +11343,13 @@ integer_text
 
 			$$ = $2;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '-' UNSIGNED_INTEGER
 		{{
 
 			$$ = pt_append_string (this_parser, (char *) "-", $2);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 uint_text
@@ -11366,7 +11358,7 @@ uint_text
 
 			$$ = $1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_plus
@@ -11380,19 +11372,19 @@ opt_of_data_type_cursor
 
 			$$ = PT_TYPE_NONE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| data_type
 		{{
 
 			$$ = TO_NUMBER (CONTAINER_AT_0 ($1));
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CURSOR
 		{{
 
 			$$ = PT_TYPE_RESULTSET;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_of_is_as
@@ -11407,14 +11399,14 @@ opt_sp_param_list
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| sp_param_list
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 sp_param_list
@@ -11424,14 +11416,14 @@ sp_param_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| sp_param_def
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 sp_param_def
@@ -11455,7 +11447,7 @@ sp_param_def
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| identifier 
 	  opt_sp_in_out 
 	  CURSOR
@@ -11476,7 +11468,7 @@ sp_param_def
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_sp_in_out
@@ -11485,13 +11477,13 @@ opt_sp_in_out
 
 			$$ = $1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| IN_ OUT_
 		{{
 
 			$$ = PT_INPUTOUTPUT;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 esql_query_stmt
@@ -11502,7 +11494,7 @@ esql_query_stmt
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 			parser_select_level--;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 csql_query
@@ -11521,14 +11513,14 @@ csql_query
 			parser_save_and_set_sqc (1);
 			parser_save_and_set_pseudoc (1);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	  select_expression_opt_with
 		{{
 
 			PT_NODE *node = $2;
 			parser_push_orderby_node (node);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	  opt_orderby_clause
 		{{
 
@@ -11581,7 +11573,7 @@ csql_query
 
 			parser_push_orderby_node (node);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	opt_select_limit_clause
 	opt_for_update_clause
 		{{
@@ -11590,7 +11582,7 @@ csql_query
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 csql_query_without_values_query
@@ -11609,14 +11601,14 @@ csql_query_without_values_query
 			parser_save_and_set_sqc (1);
 			parser_save_and_set_pseudoc (1);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	  select_expression_without_values_query
 		{{
 
 			PT_NODE *node = $2;
 			parser_push_orderby_node (node);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	  opt_orderby_clause
 		{{
 
@@ -11669,7 +11661,7 @@ csql_query_without_values_query
 
 			parser_push_orderby_node (node);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	opt_select_limit_clause
 	opt_for_update_clause
 		{{
@@ -11678,7 +11670,7 @@ csql_query_without_values_query
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 select_expression_opt_with
@@ -11695,7 +11687,7 @@ select_expression_opt_with
 
 			$$ = stmt;
 
-		DBG_PRINT}} 
+		DBG_PRINT;}} 
 	;   
 
 select_expression
@@ -11745,7 +11737,7 @@ select_expression
         
         parser_push_orderby_node (node);
         
-		DBG_PRINT}}
+		DBG_PRINT;}}
       opt_select_limit_clause
       opt_for_update_clause
 		{{
@@ -11754,7 +11746,7 @@ select_expression
 			$<node>$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($<node>$, @$.buffer_pos)
             
-            DBG_PRINT}}
+            DBG_PRINT;}}
      table_op select_or_subquery
      {{
          
@@ -11781,14 +11773,14 @@ select_expression
 			$$ = stmt;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| select_or_subquery
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 select_expression_without_values_query
@@ -11838,7 +11830,7 @@ select_expression_without_values_query
         
         parser_push_orderby_node (node);
         
-		DBG_PRINT}}
+		DBG_PRINT;}}
       opt_select_limit_clause
       opt_for_update_clause
 		{{
@@ -11847,7 +11839,7 @@ select_expression_without_values_query
 			$<node>$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($<node>$, @$.buffer_pos)
             
-            DBG_PRINT}}
+            DBG_PRINT;}}
      table_op select_or_subquery_without_values_query
      {{
          
@@ -11873,14 +11865,14 @@ select_expression_without_values_query
 			$$ = stmt;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| select_or_subquery_without_values_query
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 table_op
@@ -11898,7 +11890,7 @@ table_op
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DIFFERENCE_ all_distinct
 		{{
 
@@ -11914,7 +11906,7 @@ table_op
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| EXCEPT all_distinct
 		{{
 
@@ -11930,7 +11922,7 @@ table_op
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INTERSECTION all_distinct
 		{{
 
@@ -11946,7 +11938,7 @@ table_op
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INTERSECT all_distinct
 		{{
 
@@ -11962,7 +11954,7 @@ table_op
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 select_or_subquery
@@ -11972,19 +11964,19 @@ select_or_subquery
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| subquery
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| values_query
 		{{
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 select_or_subquery_without_values_query
@@ -11994,14 +11986,14 @@ select_or_subquery_without_values_query
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| subquery
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 values_query
@@ -12024,7 +12016,7 @@ values_query
 			  
 			  parser_push_select_stmt_node (node);
 			  parser_push_hint_node (node);
-		DBG_PRINT}}
+		DBG_PRINT;}}
 		values_expression
 			{{
 				/* $3 node of type PT_NODE_LIST */
@@ -12068,7 +12060,7 @@ values_query
 				  parser_select_level--;
 				  
 				$$ = node;
-			DBG_PRINT}}
+			DBG_PRINT;}}
 	;
 
 values_expression
@@ -12079,11 +12071,11 @@ values_expression
 			parser_make_link (node1, node2);
 			
 			$$ = node1;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| values_expr_item
 		{{
 			$$ = $1;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 values_expr_item
@@ -12103,7 +12095,7 @@ values_expr_item
 			PT_SET_VALUE_QUERY(node);
 			
 			$$ = node;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 select_stmt
@@ -12128,7 +12120,7 @@ select_stmt
 			parser_push_select_stmt_node (node);
 			parser_push_hint_node (node);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	opt_hint_list 		/* $3 */
 	all_distinct            /* $4 */
 	select_list 		/* $5 */
@@ -12165,7 +12157,7 @@ opt_with_clause
 
 			$$ = NULL;
 
-		DBG_PRINT}}    
+		DBG_PRINT;}}    
 	| WITH            /* $1 */
 	opt_recursive   /* $2 */
 	cte_definition_list   /* $3 */  
@@ -12184,7 +12176,7 @@ opt_with_clause
 
 			$$ = node;
 
-		DBG_PRINT}} 
+		DBG_PRINT;}} 
 	;
 
 opt_recursive
@@ -12192,12 +12184,12 @@ opt_recursive
 		{{
 			$$ = 0;
 
-		DBG_PRINT}}   
+		DBG_PRINT;}}   
 	| RECURSIVE
 		{{ 
 			$$ = 1;
 
-		DBG_PRINT}}  
+		DBG_PRINT;}}  
 	;  
 
 cte_definition_list
@@ -12207,14 +12199,14 @@ cte_definition_list
 			$$ = parser_make_link($1, $3);
 			PARSER_SAVE_ERR_CONTEXT($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| cte_definition
 		{{
       
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT($$, @$.buffer_pos)
 
-		DBG_PRINT}}    
+		DBG_PRINT;}}    
   	;
 
 cte_definition
@@ -12238,7 +12230,7 @@ cte_definition
 
 			$$ = node;
 
-		DBG_PRINT}}  
+		DBG_PRINT;}}  
   	;    
 
 cte_query_list
@@ -12259,14 +12251,14 @@ cte_query_list
 			$$ = stmt;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| select_or_subquery
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT($$, @$.buffer_pos);
 
-		DBG_PRINT}}  
+		DBG_PRINT;}}  
 	; 
 
 opt_from_clause
@@ -12307,14 +12299,13 @@ opt_from_clause
 
 			$$ = node;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| FROM				/* $1 */
 	  extended_table_spec_list	/* $2 */
 		{{			/* $3 */
 
 			parser_found_Oracle_outer = false;
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	  opt_where_clause		/* $4 */
 	  opt_startwith_connectby_clause/* $5 */
 	  opt_groupby_clause		/* $6 */
@@ -12431,7 +12422,7 @@ opt_from_clause
 
 			$$ = node;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_select_param_list
@@ -12440,21 +12431,21 @@ opt_select_param_list
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INTO to_param_list
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TO to_param_list
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_hint_list
@@ -12470,7 +12461,7 @@ hint_list
 			char *hint_comment = $2;
 			(void) pt_get_hint (hint_comment, parser_hint_table, node);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| hint_list SQL_STYLE_HINT
 		{{
 
@@ -12478,7 +12469,7 @@ hint_list
 			char *hint_comment = $2;
 			(void) pt_get_hint (hint_comment, parser_hint_table, node);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| hint_list C_STYLE_HINT
 		{{
 
@@ -12486,7 +12477,7 @@ hint_list
 			char *hint_comment = $2;
 			(void) pt_get_hint (hint_comment, parser_hint_table, node);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CPP_STYLE_HINT
 		{{
 
@@ -12494,7 +12485,7 @@ hint_list
 			char *hint_comment = $1;
 			(void) pt_get_hint (hint_comment, parser_hint_table, node);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SQL_STYLE_HINT
 		{{
 
@@ -12502,7 +12493,7 @@ hint_list
 			char *hint_comment = $1;
 			(void) pt_get_hint (hint_comment, parser_hint_table, node);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| C_STYLE_HINT
 		{{
 
@@ -12510,7 +12501,7 @@ hint_list
 			char *hint_comment = $1;
 			(void) pt_get_hint (hint_comment, parser_hint_table, node);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 all_distinct
@@ -12519,25 +12510,25 @@ all_distinct
 
 			$$ = PT_EMPTY;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ALL
 		{{
 
 			$$ = PT_ALL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DISTINCT
 		{{
 
 			$$ = PT_DISTINCT;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| UNIQUE
 		{{
 
 			$$ = PT_DISTINCT;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 select_list
@@ -12550,7 +12541,7 @@ select_list
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 
 	| '*' ',' alias_enabled_expression_list_top
 		{{
@@ -12562,13 +12553,13 @@ select_list
 			$$ = parser_make_link (node, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 
 	| alias_enabled_expression_list_top
 		{{
 			 $$ = $1;
 			 PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 alias_enabled_expression_list_top
@@ -12582,7 +12573,7 @@ alias_enabled_expression_list_top
 			parser_save_and_set_prc (1);
 			parser_save_and_set_cbrc (1);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	  alias_enabled_expression_list
 		{{
 
@@ -12595,7 +12586,7 @@ alias_enabled_expression_list_top
 			parser_restore_prc ();
 			parser_restore_cbrc ();
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 alias_enabled_expression_list
@@ -12605,7 +12596,7 @@ alias_enabled_expression_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| alias_enabled_expression_
 		{{
 
@@ -12617,7 +12608,7 @@ alias_enabled_expression_list
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 alias_enabled_expression_
@@ -12665,7 +12656,7 @@ alias_enabled_expression_
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| predicate_expression opt_as_identifier %dprec 1
 		{{
 
@@ -12682,7 +12673,7 @@ alias_enabled_expression_
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 expression_list
@@ -12691,7 +12682,7 @@ expression_list
 
 			$$ = CONTAINER_AT_0($1);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 expression_queue
@@ -12707,7 +12698,7 @@ expression_queue
 			$$ = new_q;
 			PARSER_SAVE_ERR_CONTEXT (q_head, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| expression_
 		{{
 			container_2 new_q;
@@ -12716,7 +12707,7 @@ expression_queue
 			$$ = new_q;
 			PARSER_SAVE_ERR_CONTEXT ($1, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 to_param_list
@@ -12726,14 +12717,13 @@ to_param_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| to_param
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 to_param
@@ -12744,7 +12734,7 @@ to_param
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| param_
 		{{
 
@@ -12760,7 +12750,7 @@ to_param
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| identifier
 		{{
 
@@ -12776,7 +12766,7 @@ to_param
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 from_param
@@ -12794,7 +12784,7 @@ from_param
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| param_
 		{{
 
@@ -12809,7 +12799,7 @@ from_param
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CLASS identifier
 		{{
 
@@ -12824,7 +12814,7 @@ from_param
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| identifier
 		{{
 
@@ -12839,7 +12829,7 @@ from_param
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -12864,7 +12854,7 @@ host_param_input
 
 			$$ = node;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PARAM_HEADER uint_text
 		{{
 
@@ -12889,7 +12879,7 @@ host_param_input
 
 			$$ = node;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 host_param_output
@@ -12908,7 +12898,7 @@ host_param_output
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PARAM_HEADER uint_text
 		{{
 
@@ -12934,7 +12924,7 @@ host_param_output
 
 			$$ = node;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 param_
@@ -12945,7 +12935,7 @@ param_
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_where_clause
@@ -12953,8 +12943,7 @@ opt_where_clause
 		{{
 
 			$$ = NULL;
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	|	{
 			parser_save_and_set_ic (1);
 			assert (parser_prior_check == 0);
@@ -12973,7 +12962,7 @@ opt_where_clause
 			$$ = $3;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_startwith_connectby_clause
@@ -12983,32 +12972,28 @@ opt_startwith_connectby_clause
 			container_2 ctn;
 			SET_CONTAINER_2 (ctn, NULL, NULL);
 			$$ = ctn;
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| startwith_clause connectby_clause
 		{{
 
 			container_2 ctn;
 			SET_CONTAINER_2 (ctn, $1, $2);
 			$$ = ctn;
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| connectby_clause startwith_clause
 		{{
 
 			container_2 ctn;
 			SET_CONTAINER_2 (ctn, $2, $1);
 			$$ = ctn;
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| connectby_clause
 		{{
 
 			container_2 ctn;
 			SET_CONTAINER_2 (ctn, NULL, $1);
 			$$ = ctn;
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 
 startwith_clause
 	:	{
@@ -13020,8 +13005,7 @@ startwith_clause
 			parser_restore_pseudoc ();
 			$$ = $4;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 connectby_clause
@@ -13040,8 +13024,7 @@ connectby_clause
 			parser_restore_sqc ();
 			$$ = $5;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_nocycle
@@ -13055,8 +13038,7 @@ opt_nocycle
 			    node->info.query.q.select.check_cycles =
 			      CONNECT_BY_CYCLES_NONE;
 			  }
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_groupby_clause
@@ -13064,15 +13046,13 @@ opt_groupby_clause
 		{{
 
 			$$ = NULL;
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| GROUP_ BY group_spec_list
 		{{
 
 			$$ = $3;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_with_rollup
@@ -13080,14 +13060,12 @@ opt_with_rollup
 		{{
 
 			$$ = 0;
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| WITH ROLLUP
 		{{
 
 			$$ = 1;
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 group_spec_list
@@ -13096,15 +13074,14 @@ group_spec_list
 
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| group_spec
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -13161,7 +13138,7 @@ group_spec
 
 			$$ = node;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -13171,7 +13148,7 @@ opt_having_clause
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	|	{ parser_save_and_set_gc(1); }
 	  HAVING search_condition
 		{{
@@ -13180,7 +13157,7 @@ opt_having_clause
 			$$ = $3;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_using_index_clause
@@ -13189,14 +13166,14 @@ opt_using_index_clause
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| USING INDEX index_name_keylimit_list
 		{{
 
 			$$ = $3;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| USING INDEX NONE
 		{{
 
@@ -13213,7 +13190,7 @@ opt_using_index_clause
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| USING INDEX ALL EXCEPT index_name_list
 		{{
 			PT_NODE *curr;
@@ -13249,7 +13226,7 @@ opt_using_index_clause
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 index_name_keylimit_list
@@ -13259,14 +13236,14 @@ index_name_keylimit_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| index_name_keylimit
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 index_name_list
@@ -13276,14 +13253,14 @@ index_name_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| index_name
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 	
 index_name_keylimit
@@ -13312,7 +13289,7 @@ index_name_keylimit
 			  }
 			$$ = node;
 			
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| index_name KEYLIMIT limit_expr ',' limit_expr
 		{{
 		
@@ -13337,14 +13314,14 @@ index_name_keylimit
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 			
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| index_name
 		{{
 		
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 			
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 index_name
@@ -13357,7 +13334,7 @@ index_name
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| class_name paren_minus
 		{{
 
@@ -13367,7 +13344,7 @@ index_name
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| class_name
 		{{
 
@@ -13377,7 +13354,7 @@ index_name
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| identifier DOT NONE
 		{{
 		
@@ -13389,7 +13366,7 @@ index_name
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 		
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_with_increment_clause
@@ -13398,21 +13375,21 @@ opt_with_increment_clause
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| WITH INCREMENT For incr_arg_name_list__inc
 		{{
 
 			$$ = $4;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| WITH DECREMENT For incr_arg_name_list__dec
 		{{
 
 			$$ = $4;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_for_update_clause
@@ -13436,7 +13413,7 @@ opt_for_update_clause
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| For UPDATE OF class_name_list
 		{{
 
@@ -13477,7 +13454,7 @@ opt_for_update_clause
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 incr_arg_name_list__inc
@@ -13487,14 +13464,14 @@ incr_arg_name_list__inc
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| incr_arg_name__inc
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 incr_arg_name__inc
@@ -13519,7 +13496,7 @@ incr_arg_name__inc
 
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 incr_arg_name_list__dec
@@ -13529,14 +13506,14 @@ incr_arg_name_list__dec
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| incr_arg_name__dec
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 incr_arg_name__dec
@@ -13561,7 +13538,7 @@ incr_arg_name__dec
 
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_update_orderby_clause
@@ -13581,7 +13558,7 @@ opt_update_orderby_clause
 
 			$$ = stmt;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_orderby_clause
@@ -13613,7 +13590,7 @@ opt_orderby_clause
 				MSGCAT_SET_PARSER_SEMANTIC,
 				MSGCAT_SEMANTIC_NOT_ALLOWED_HERE, "ORDER BY");
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	  sort_spec_list
 		{{
 
@@ -13625,7 +13602,7 @@ opt_orderby_clause
 			parser_restore_pseudoc ();
 			parser_save_and_set_oc (1);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	  opt_for_search_condition
 		{{
 
@@ -13779,7 +13756,7 @@ opt_orderby_clause
 			$$ = stmt;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_siblings
@@ -13797,7 +13774,7 @@ opt_siblings
 				    "SIBLINGS");
 			    }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 limit_expr
@@ -13806,19 +13783,19 @@ limit_expr
                         $$ = parser_make_expression (this_parser, PT_PLUS, $1, $3, NULL);
                         PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-                DBG_PRINT}}
+                DBG_PRINT;}}
         | limit_expr '-' limit_term
                 {{
                         $$ = parser_make_expression (this_parser, PT_MINUS, $1, $3, NULL);
                         PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-                DBG_PRINT}}
+                DBG_PRINT;}}
         | limit_term
                 {{
                         $$ = $1;
                         PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-                DBG_PRINT}}
+                DBG_PRINT;}}
         ;
 
 limit_term
@@ -13827,19 +13804,19 @@ limit_term
                         $$ = parser_make_expression (this_parser, PT_TIMES, $1, $3, NULL);
                         PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-                DBG_PRINT}}
+                DBG_PRINT;}}
         | limit_term '/' limit_factor
                 {{
                         $$ = parser_make_expression (this_parser, PT_DIVIDE, $1, $3, NULL);
                         PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-                DBG_PRINT}}
+                DBG_PRINT;}}
         | limit_factor
                 {{
                         $$ = $1;
                         PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-                DBG_PRINT}}
+                DBG_PRINT;}}
           ;
 
 limit_factor
@@ -13849,14 +13826,14 @@ limit_factor
                         $$ = $1;
                         PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-                DBG_PRINT}}
+                DBG_PRINT;}}
         | unsigned_integer
                 {{
 
                         $$ = $1;
                         PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-                DBG_PRINT}}
+                DBG_PRINT;}}
 
         | '(' limit_expr ')'
                 {{
@@ -13870,7 +13847,7 @@ limit_factor
                         $$ = exp;
                         PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-                DBG_PRINT}}
+                DBG_PRINT;}}
         ;
 
 opt_select_limit_clause
@@ -13941,7 +13918,7 @@ opt_select_limit_clause
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 limit_options
@@ -13957,7 +13934,7 @@ limit_options
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| limit_expr ',' limit_expr
 		{{
 
@@ -13976,7 +13953,7 @@ limit_options
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| limit_expr OFFSET limit_expr
 		{{
 
@@ -13995,7 +13972,7 @@ limit_options
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_upd_del_limit_clause
@@ -14007,7 +13984,7 @@ opt_upd_del_limit_clause
 			  $$ = $2;
 			  PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_for_search_condition
@@ -14031,7 +14008,7 @@ opt_for_search_condition
 			     }
 			  }
 			$$ = $2;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 sort_spec_list
@@ -14041,14 +14018,14 @@ sort_spec_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| sort_spec
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 sort_spec
@@ -14066,7 +14043,7 @@ sort_spec
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| expression_ DESC opt_nulls_first_or_last
 		{{
 
@@ -14082,7 +14059,7 @@ sort_spec
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| expression_ opt_nulls_first_or_last
 		{{
 
@@ -14098,7 +14075,7 @@ sort_spec
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_nulls_first_or_last
@@ -14107,19 +14084,19 @@ opt_nulls_first_or_last
 
 			$$ = PT_NULLS_DEFAULT;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NULLS FIRST
 		{{
 
 			$$ = PT_NULLS_FIRST;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NULLS LAST
 		{{
 
 			$$ = PT_NULLS_LAST;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 expression_
@@ -14129,33 +14106,39 @@ expression_
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| predicate_expression
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
 normal_expression
-	: session_variable_definition
-		{{
-
-			$$ = $1;
-			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-
-		DBG_PRINT}}
-	| expression_strcat
-		{{
-
-			$$ = $1;
-			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-
-		DBG_PRINT}}
-	;
+    : session_variable_definition
+        {{
+            DBG("normal_expression := session_variable_definition\n");
+            $$ = $1;
+            PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
+            DBG_PRINT;
+        }}
+    | expression_strcat
+        {{
+            DBG("normal_expression := expression_strcat\n");
+            $$ = $1;
+            PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
+            DBG_PRINT;
+        }}
+    | can_cast_func
+        {{
+            DBG("normal_expression := can_cast_func\n");
+            $$ = $1;
+            DBG_PRINT;
+        }}
+    ;
 
 expression_strcat
 	: expression_strcat STRCAT expression_bitor
@@ -14164,14 +14147,14 @@ expression_strcat
 			$$ = parser_make_expression (this_parser, PT_STRCAT, $1, $3, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| expression_bitor
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 expression_bitor
@@ -14181,14 +14164,14 @@ expression_bitor
 			$$ = parser_make_expression (this_parser, PT_BIT_OR, $1, $3, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| expression_bitand
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 expression_bitand
@@ -14198,14 +14181,14 @@ expression_bitand
 			$$ = parser_make_expression (this_parser, PT_BIT_AND, $1, $3, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| expression_bitshift
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 expression_bitshift
@@ -14215,21 +14198,21 @@ expression_bitshift
 			$$ = parser_make_expression (this_parser, PT_BITSHIFT_LEFT, $1, $3, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| expression_bitshift BITSHIFT_RIGHT expression_add_sub
 		{{
 
 			$$ = parser_make_expression (this_parser, PT_BITSHIFT_RIGHT, $1, $3, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| expression_add_sub
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 expression_add_sub
@@ -14239,21 +14222,21 @@ expression_add_sub
 			$$ = parser_make_expression (this_parser, PT_PLUS, $1, $3, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| expression_add_sub '-' term
 		{{
 
 			$$ = parser_make_expression (this_parser, PT_MINUS, $1, $3, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| term
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 term
@@ -14263,35 +14246,35 @@ term
 			$$ = parser_make_expression (this_parser, PT_TIMES, $1, $3, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| term '/' factor
 		{{
 
 			$$ = parser_make_expression (this_parser, PT_DIVIDE, $1, $3, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| term DIV factor
 		{{
 
 			$$ = parser_make_expression (this_parser, PT_DIV, $1, $3, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| term MOD factor
 		{{
 
 			$$ = parser_make_expression (this_parser, PT_MOD, $1, $3, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| factor
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 factor
@@ -14301,14 +14284,14 @@ factor
 			$$ = parser_make_expression (this_parser, PT_BIT_XOR, $1, $3, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| factor_
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 factor_
@@ -14317,38 +14300,32 @@ factor_
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '-' factor_
 		{{
 
 			$$ = parser_make_expression (this_parser, PT_UNARY_MINUS, $2, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '+' factor_
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '~' primary
 		{{
 
 			$$ = parser_make_expression (this_parser, PT_BIT_NOT, $2, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PRIOR
 		{{
-
 			parser_save_and_set_sysc (0);
 			parser_save_and_set_prc (0);
 			parser_save_and_set_cbrc (0);
 			parser_save_and_set_pseudoc (0);
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	  primary_w_collate
 		{{
 
@@ -14367,17 +14344,15 @@ factor_
 			  }
 
 			$$ = node;
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CONNECT_BY_ROOT
 		{{
-
 			parser_save_and_set_sysc (0);
 			parser_save_and_set_prc (0);
 			parser_save_and_set_cbrc (0);
 			parser_save_and_set_pseudoc (0);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	  primary_w_collate
 		{{
 
@@ -14396,8 +14371,7 @@ factor_
 			  }
 
 			$$ = node;
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 primary_w_collate
@@ -14419,7 +14393,7 @@ primary_w_collate
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 
 primary
 	: pseudo_column		%dprec 11
@@ -14432,35 +14406,35 @@ primary
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| reserved_func		%dprec 10
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| case_expr		%dprec 9
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| extract_expr		%dprec 8
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| literal_w_o_param	%dprec 7
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| insert_expression	%dprec 6
 		{{
 
@@ -14469,14 +14443,14 @@ primary
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 			parser_groupby_exception = PT_IS_SUBINSERT;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| path_expression	%dprec 5
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '(' expression_list ')' %dprec 4
 		{{
 			PT_NODE *exp = $2;
@@ -14526,7 +14500,7 @@ primary
 			    parser_groupby_exception = PT_EXPR;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '(' search_condition_query ')' %dprec 2
 		{{
 
@@ -14541,13 +14515,13 @@ primary
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 			parser_groupby_exception = PT_EXPR;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| subquery    %dprec 1
 		{{
 			parser_groupby_exception = PT_IS_SUBQUERY;
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| session_variable_expression
 		{{
 
@@ -14560,19 +14534,16 @@ primary
 search_condition_query
 	: search_condition_expression
 		{{
-
 			PT_NODE *node = $1;
 			parser_push_orderby_node (node);
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	  opt_orderby_clause
 		{{
 
 			PT_NODE *node = parser_pop_orderby_node ();
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 search_condition_expression
@@ -14582,7 +14553,7 @@ search_condition_expression
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 pseudo_column
@@ -14592,21 +14563,21 @@ pseudo_column
 			$$ = parser_make_expression (this_parser, PT_CONNECT_BY_ISCYCLE, NULL, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CONNECT_BY_ISLEAF
 		{{
 
 			$$ = parser_make_expression (this_parser, PT_CONNECT_BY_ISLEAF, NULL, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| LEVEL
 		{{
 
 			$$ = parser_make_expression (this_parser, PT_LEVEL, NULL, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -14627,7 +14598,7 @@ reserved_func
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 			parser_groupby_exception = PT_COUNT;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COUNT '(' '*' ')' OVER '(' opt_analytic_partition_by opt_analytic_order_by ')'
 		{{
 
@@ -14646,7 +14617,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COUNT '(' of_distinct_unique expression_ ')'
 		{{
 
@@ -14663,7 +14634,7 @@ reserved_func
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 			parser_groupby_exception = PT_COUNT;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COUNT '(' of_distinct_unique expression_ ')' OVER '(' opt_analytic_partition_by opt_analytic_order_by ')'
 		{{
 
@@ -14682,7 +14653,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COUNT '(' opt_all expression_ ')'
 		{{
 
@@ -14699,7 +14670,7 @@ reserved_func
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 			parser_groupby_exception = PT_COUNT;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COUNT '(' opt_all expression_ ')' OVER '(' opt_analytic_partition_by opt_analytic_order_by ')'
 		{{
 
@@ -14718,7 +14689,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_avg_max_etc '(' of_distinct_unique expression_ ')'
 		{{
 
@@ -14740,7 +14711,7 @@ reserved_func
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 			parser_groupby_exception = PT_COUNT;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_avg_max_etc '(' opt_all expression_ ')'
 		{{
 
@@ -14757,7 +14728,7 @@ reserved_func
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 			parser_groupby_exception = PT_COUNT;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_analytic '(' of_distinct_unique expression_ ')' OVER '(' opt_analytic_partition_by opt_analytic_order_by ')'
 		{{
 
@@ -14779,7 +14750,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_analytic '(' opt_all expression_ ')' OVER '(' opt_analytic_partition_by opt_analytic_order_by ')'
 		{{
 
@@ -14798,7 +14769,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_analytic_first_last '(' expression_ ')' opt_analytic_ignore_nulls OVER '(' opt_analytic_partition_by opt_analytic_order_by ')'
 		{{
 
@@ -14823,7 +14794,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_analytic_nth_value '(' expression_ ',' expression_ ')' opt_analytic_from_last opt_analytic_ignore_nulls OVER '(' opt_analytic_partition_by opt_analytic_order_by ')'
 		{{
 
@@ -14861,7 +14832,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_analytic_lead_lag '(' expression_ ')' OVER '(' opt_analytic_partition_by opt_analytic_order_by ')'
 		{{
 
@@ -14894,7 +14865,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_analytic_lead_lag '(' expression_ ',' expression_ ')' OVER '(' opt_analytic_partition_by opt_analytic_order_by ')'
 		{{
 
@@ -14921,7 +14892,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_analytic_lead_lag '(' expression_ ',' expression_ ',' expression_ ')' OVER '(' opt_analytic_partition_by opt_analytic_order_by ')'
 		{{
 
@@ -14942,7 +14913,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_analytic_no_args '(' ')' OVER '(' opt_analytic_partition_by opt_analytic_order_by ')'
 		{{
 
@@ -14971,7 +14942,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| GROUP_CONCAT
 		{ push_msg(MSGCAT_SYNTAX_INVALID_GROUP_CONCAT); }
 		'(' of_distinct_unique expression_ opt_agg_order_by opt_group_concat_separator ')'
@@ -14991,7 +14962,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| GROUP_CONCAT '(' opt_all opt_expression_list opt_agg_order_by opt_group_concat_separator ')'
 		{{
 
@@ -15016,7 +14987,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_percentile '(' expression_ ')' WITHIN GROUP_ '(' ORDER BY sort_spec ')' opt_over_analytic_partition_by
 		{{
 		
@@ -15068,7 +15039,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INSERT
 	  { push_msg(MSGCAT_SYNTAX_INVALID_INSERT_SUBSTRING); }
 	  '(' expression_list ')'
@@ -15088,7 +15059,7 @@ reserved_func
 
 			$$ = node;		
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ELT '(' opt_expression_list ')'
 		{{
 		    PT_NODE *args_list = $3;
@@ -15105,14 +15076,14 @@ reserved_func
 
 		    $$ = node;
 		    PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| POSITION '(' expression_ IN_ expression_ ')'
 		{{
 
 			$$ = parser_make_expression (this_parser, PT_POSITION, $3, $5, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SUBSTRING_
 		{ push_msg(MSGCAT_SYNTAX_INVALID_SUBSTRING); }
 	  '(' expression_ FROM expression_ For expression_ ')'
@@ -15125,7 +15096,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SUBSTRING_
 		{ push_msg(MSGCAT_SYNTAX_INVALID_SUBSTRING); }
 	  '(' expression_ FROM expression_ ')'
@@ -15138,7 +15109,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SUBSTRING_
 		{ push_msg(MSGCAT_SYNTAX_INVALID_SUBSTRING); }
 	  '(' expression_ ',' expression_ ',' expression_ ')'
@@ -15151,7 +15122,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SUBSTRING_
 		{ push_msg(MSGCAT_SYNTAX_INVALID_SUBSTRING); }
 	  '(' expression_ ',' expression_ ')'
@@ -15164,7 +15135,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| Date
 		{ push_msg(MSGCAT_SYNTAX_INVALID_DATE); }
 	  '(' expression_ ')'
@@ -15176,7 +15147,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| Time
 		{ push_msg(MSGCAT_SYNTAX_INVALID_TIME); }
 	  '(' expression_ ')'
@@ -15188,7 +15159,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ADDDATE
 		{ push_msg(MSGCAT_SYNTAX_INVALID_ADDDATE); }
 	  '(' expression_ ',' expression_ ')'
@@ -15200,7 +15171,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| adddate_name
 		{ push_msg(MSGCAT_SYNTAX_INVALID_DATE_ADD); }
 	  '(' expression_ ',' INTERVAL expression_ datetime_field ')'
@@ -15221,7 +15192,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SUBDATE
 		{ push_msg(MSGCAT_SYNTAX_INVALID_SUBDATE); }
 	  '(' expression_ ',' expression_ ')'
@@ -15233,7 +15204,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| subdate_name
 		{ push_msg(MSGCAT_SYNTAX_INVALID_DATE_SUB); }
 	  '(' expression_ ',' INTERVAL expression_ datetime_field ')'
@@ -15254,7 +15225,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TIMESTAMP
 		{ push_msg(MSGCAT_SYNTAX_INVALID_TIMESTAMP); }
 		'(' expression_ ')'
@@ -15273,7 +15244,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TIMESTAMP
 		{ push_msg(MSGCAT_SYNTAX_INVALID_TIMESTAMP); }
 		'(' expression_ ',' expression_ ')'
@@ -15285,7 +15256,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| YEAR_
 		{ push_msg(MSGCAT_SYNTAX_INVALID_YEAR); }
 		'(' expression_ ')'
@@ -15297,7 +15268,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| MONTH_
 		{ push_msg(MSGCAT_SYNTAX_INVALID_MONTH); }
 		'(' expression_ ')'
@@ -15309,7 +15280,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DAY_
 		{ push_msg(MSGCAT_SYNTAX_INVALID_DAY); }
 		'(' expression_ ')'
@@ -15321,7 +15292,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| HOUR_
 		{ push_msg(MSGCAT_SYNTAX_INVALID_HOUR); }
 		'(' expression_ ')'
@@ -15333,7 +15304,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| MINUTE_
 		{ push_msg(MSGCAT_SYNTAX_INVALID_MINUTE); }
 		'(' expression_ ')'
@@ -15345,7 +15316,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SECOND_
 		{ push_msg(MSGCAT_SYNTAX_INVALID_SECOND); }
 		'(' expression_ ')'
@@ -15357,7 +15328,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DATABASE
 		{ push_msg(MSGCAT_SYNTAX_INVALID_DATABASE); }
 	  '(' ')'
@@ -15369,7 +15340,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SCHEMA
 		{ push_msg(MSGCAT_SYNTAX_INVALID_SCHEMA); }
 	  '(' ')'
@@ -15381,7 +15352,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TRIM
 		{ push_msg(MSGCAT_SYNTAX_INVALID_TRIM); }
 	  '(' of_leading_trailing_both expression_ FROM expression_ ')'
@@ -15394,7 +15365,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TRIM
 		{ push_msg(MSGCAT_SYNTAX_INVALID_TRIM); }
 	  '(' of_leading_trailing_both FROM expression_ ')'
@@ -15407,7 +15378,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TRIM
 		{ push_msg(MSGCAT_SYNTAX_INVALID_TRIM); }
 	  '(' expression_ FROM  expression_ ')'
@@ -15420,7 +15391,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TRIM
 		{ push_msg(MSGCAT_SYNTAX_INVALID_TRIM); }
 	  '(' expression_ ')'
@@ -15433,7 +15404,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CHR
 		{ push_msg(MSGCAT_SYNTAX_INVALID_CHR); }
 	  '(' expression_ opt_using_charset ')'
@@ -15445,7 +15416,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CLOB_TO_CHAR
 		{ push_msg(MSGCAT_SYNTAX_INVALID_CLOB_TO_CHAR); }
 	  '(' expression_ opt_using_charset ')'
@@ -15457,7 +15428,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}		
+		DBG_PRINT;}}		
 	| CAST
 		{ push_msg(MSGCAT_SYNTAX_INVALID_CAST); }
 	  '(' expression_ AS of_cast_data_type ')'
@@ -15492,7 +15463,7 @@ reserved_func
 			$$ = expr;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CLASS '(' identifier ')'
 		{{
 
@@ -15501,7 +15472,7 @@ reserved_func
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 			parser_groupby_exception = PT_OID_ATTR;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SYS_DATE
 		{{
 
@@ -15509,7 +15480,7 @@ reserved_func
 			$$ = expr;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_current_date
 		{{
 
@@ -15517,7 +15488,7 @@ reserved_func
 			$$ = expr;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SYS_TIME_
 		{{
 
@@ -15525,7 +15496,7 @@ reserved_func
 			$$ = expr;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_current_time
 		{{
 
@@ -15533,7 +15504,7 @@ reserved_func
 			$$ = expr;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_db_timezone_
 		{{
 
@@ -15541,7 +15512,7 @@ reserved_func
 			$$ = expr;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_session_timezone_
 		{{
 
@@ -15549,7 +15520,7 @@ reserved_func
 			$$ = expr;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SYS_TIMESTAMP
 		{{
 
@@ -15557,7 +15528,7 @@ reserved_func
 			$$ = expr;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_current_timestamps
 		{{
 
@@ -15565,7 +15536,7 @@ reserved_func
 			$$ = expr;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SYS_DATETIME
 		{{
 
@@ -15573,7 +15544,7 @@ reserved_func
 			$$ = expr;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_current_datetime
 		{{
 
@@ -15581,7 +15552,7 @@ reserved_func
 			$$ = expr;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_users
 		{{
 
@@ -15593,7 +15564,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_users
 		{ push_msg(MSGCAT_SYNTAX_INVALID_SYSTEM_USER); }
 	  '(' ')'
@@ -15605,7 +15576,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DEFAULT '('
 		{ push_msg(MSGCAT_SYNTAX_INVALID_DEFAULT); }
 	  simple_path_id ')'
@@ -15624,7 +15595,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| LOCAL_TRANSACTION_ID
 		{{
 
@@ -15637,7 +15608,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ROWNUM
 		{{
 
@@ -15658,7 +15629,7 @@ reserved_func
 				       MSGCAT_SEMANTIC_INSTNUM_COMPATIBILITY_ERR,
 				       "INST_NUM() or ROWNUM", "INST_NUM() or ROWNUM");
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ADD_MONTHS
 		{ push_msg(MSGCAT_SYNTAX_INVALID_ADD_MONTHS); }
 	  '(' expression_ ',' expression_ ')'
@@ -15668,7 +15639,7 @@ reserved_func
 			$$ = parser_make_expression (this_parser, PT_ADD_MONTHS, $4, $6, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| OCTET_LENGTH
 		{ push_msg(MSGCAT_SYNTAX_INVALID_OCTET_LENGTH); }
 	  '(' expression_ ')'
@@ -15678,7 +15649,7 @@ reserved_func
 			$$ = parser_make_expression (this_parser, PT_OCTET_LENGTH, $4, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| BIT_LENGTH
 		{ push_msg(MSGCAT_SYNTAX_INVALID_BIT_LENGTH); }
 	  '(' expression_ ')'
@@ -15688,7 +15659,7 @@ reserved_func
 			$$ = parser_make_expression (this_parser, PT_BIT_LENGTH, $4, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| LOWER
 		{ push_msg(MSGCAT_SYNTAX_INVALID_LOWER); }
 	  '(' expression_ ')'
@@ -15698,7 +15669,7 @@ reserved_func
 			$$ = parser_make_expression (this_parser, PT_LOWER, $4, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| LCASE
 		{ push_msg(MSGCAT_SYNTAX_INVALID_LOWER); }
 	  '(' expression_ ')'
@@ -15708,7 +15679,7 @@ reserved_func
 			$$ = parser_make_expression (this_parser, PT_LOWER, $4, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| UPPER
 		{ push_msg(MSGCAT_SYNTAX_INVALID_UPPER); }
 	  '(' expression_ ')'
@@ -15718,7 +15689,7 @@ reserved_func
 			$$ = parser_make_expression (this_parser, PT_UPPER, $4, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| UCASE
 		{ push_msg(MSGCAT_SYNTAX_INVALID_UPPER); }
 	  '(' expression_ ')'
@@ -15728,7 +15699,7 @@ reserved_func
 			$$ = parser_make_expression (this_parser, PT_UPPER, $4, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SYS_CONNECT_BY_PATH
 		{{
 
@@ -15762,7 +15733,7 @@ reserved_func
 			  }
 			$$ = node;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| IF
 		{ push_msg (MSGCAT_SYNTAX_INVALID_IF); }
 	  '(' search_condition ',' expression_ ',' expression_ ')'
@@ -15772,7 +15743,7 @@ reserved_func
 			$$ = parser_make_expression (this_parser, PT_IF, $4, $6, $8);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| IFNULL
 		{ push_msg (MSGCAT_SYNTAX_INVALID_IFNULL); }
 	  '(' expression_ ',' expression_ ')'
@@ -15782,7 +15753,7 @@ reserved_func
 			$$ = parser_make_expression (this_parser, PT_IFNULL, $4, $6, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ISNULL
 		{ push_msg (MSGCAT_SYNTAX_INVALID_ISNULL); }
 	  '(' expression_ ')'
@@ -15792,7 +15763,7 @@ reserved_func
 			$$ = parser_make_expression (this_parser, PT_ISNULL, $4, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| LEFT
 		{ push_msg(MSGCAT_SYNTAX_INVALID_LEFT); }
 	  '(' expression_ ',' expression_ ')'
@@ -15804,7 +15775,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| RIGHT
 		{ push_msg(MSGCAT_SYNTAX_INVALID_RIGHT); }
 	  '(' expression_ ',' expression_ ')'
@@ -15816,7 +15787,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| MOD
 		{ push_msg(MSGCAT_SYNTAX_INVALID_MODULUS); }
 	  '(' expression_ ',' expression_ ')'
@@ -15828,7 +15799,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TRUNCATE
 		{ push_msg(MSGCAT_SYNTAX_INVALID_TRUNCATE); }
 	  '(' expression_ ',' expression_ ')'
@@ -15838,7 +15809,7 @@ reserved_func
 			$$ = parser_make_expression (this_parser, PT_TRUNC, $4, $6, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TRANSLATE
 		{ push_msg(MSGCAT_SYNTAX_INVALID_TRANSLATE); }
 	  '(' expression_  ',' expression_ ',' expression_ ')'
@@ -15848,7 +15819,7 @@ reserved_func
 			$$ = parser_make_expression (this_parser, PT_TRANSLATE, $4, $6, $8);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| REPLACE
 		{ push_msg(MSGCAT_SYNTAX_INVALID_TRANSLATE); }
 	  '(' expression_  ',' expression_ ',' expression_ ')'
@@ -15858,7 +15829,7 @@ reserved_func
 			$$ = parser_make_expression (this_parser, PT_REPLACE, $4, $6, $8);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| REPLACE
 		{ push_msg(MSGCAT_SYNTAX_INVALID_REPLACE); }
 	  '(' expression_  ',' expression_ ')'
@@ -15868,7 +15839,7 @@ reserved_func
 			$$ = parser_make_expression (this_parser, PT_REPLACE, $4, $6, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| STR_TO_DATE
 		{ push_msg(MSGCAT_SYNTAX_INVALID_STRTODATE); }
 	  '(' expression_  ',' string_literal_or_input_hv ')'
@@ -15878,7 +15849,7 @@ reserved_func
 			$$ = parser_make_expression (this_parser, PT_STR_TO_DATE, $4, $6, parser_make_date_lang (2, NULL));
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| STR_TO_DATE
 		{ push_msg(MSGCAT_SYNTAX_INVALID_STRTODATE); }
 	  '(' expression_  ',' Null ')'
@@ -15894,7 +15865,7 @@ reserved_func
 			$$ = parser_make_expression (this_parser, PT_STR_TO_DATE, $4, node, parser_make_date_lang (2, NULL));
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CHARSET
 		{ push_msg(MSGCAT_SYNTAX_INVALID_CHARSET); }
 	  '(' expression_ ')'
@@ -15906,7 +15877,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COLLATION
 		{ push_msg(MSGCAT_SYNTAX_INVALID_COLLATION); }
 	  '(' expression_ ')'
@@ -15918,7 +15889,7 @@ reserved_func
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_cume_dist_percent_rank_function '(' expression_list ')' WITHIN GROUP_ '('ORDER BY sort_spec_list')'
 		{{
 
@@ -15934,7 +15905,7 @@ reserved_func
 
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-        DBG_PRINT}}
+        DBG_PRINT;}}
 	| INDEX_PREFIX
 		{ push_msg(MSGCAT_SYNTAX_INVALID_INDEX_PREFIX); }
 	  '(' expression_  ',' expression_ ',' expression_ ')'
@@ -15944,19 +15915,19 @@ reserved_func
 			$$ = parser_make_expression (this_parser, PT_INDEX_PREFIX, $4, $6, $8);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 of_cume_dist_percent_rank_function
 	: CUME_DIST        
 		{{
 			$$ = PT_CUME_DIST;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 
 	|PERCENT_RANK        
 		{{
 			$$ = PT_PERCENT_RANK;
-		DBG_PRINT}}
+		DBG_PRINT;}}
     ;
 	
 of_current_date
@@ -16028,85 +15999,85 @@ of_avg_max_etc
 
 			$$ = PT_AVG;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| Max
 		{{
 
 			$$ = PT_MAX;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| Min
 		{{
 
 			$$ = PT_MIN;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SUM
 		{{
 
 			$$ = PT_SUM;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| STDDEV
 		{{
 
 			$$ = PT_STDDEV;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| STDDEV_POP
 		{{
 
 			$$ = PT_STDDEV_POP;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| STDDEV_SAMP
 		{{
 
 			$$ = PT_STDDEV_SAMP;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| VAR_POP
 		{{
 
 			$$ = PT_VAR_POP;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| VAR_SAMP
 		{{
 
 			$$ = PT_VAR_SAMP;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| VARIANCE
 		{{
 
 			$$ = PT_VARIANCE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| BIT_AND
 		{{
 
 			$$ = PT_AGG_BIT_AND;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| BIT_OR
 		{{
 
 			$$ = PT_AGG_BIT_OR;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| BIT_XOR
 		{{
 
 			$$ = PT_AGG_BIT_XOR;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| MEDIAN
 		{{
 		
 			$$ = PT_MEDIAN;
 		
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 of_analytic
@@ -16115,73 +16086,73 @@ of_analytic
 
 			$$ = PT_AVG;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| Max
 		{{
 
 			$$ = PT_MAX;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| Min
 		{{
 
 			$$ = PT_MIN;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SUM
 		{{
 
 			$$ = PT_SUM;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| STDDEV
 		{{
 
 			$$ = PT_STDDEV;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| STDDEV_POP
 		{{
 
 			$$ = PT_STDDEV_POP;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| STDDEV_SAMP
 		{{
 
 			$$ = PT_STDDEV_SAMP;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| VAR_POP
 		{{
 
 			$$ = PT_VAR_POP;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| VAR_SAMP
 		{{
 
 			$$ = PT_VAR_SAMP;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| VARIANCE
 		{{
 
 			$$ = PT_VARIANCE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NTILE
 		{{
 
 			$$ = PT_NTILE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| MEDIAN
 		{{
 		
 			$$ = PT_MEDIAN;
 		
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	/* add other analytic functions here */
 	;
 
@@ -16191,13 +16162,13 @@ of_analytic_first_last
 
 			$$ = PT_FIRST_VALUE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| LAST_VALUE
 		{{
 
 			$$ = PT_LAST_VALUE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 of_analytic_nth_value
@@ -16206,7 +16177,7 @@ of_analytic_nth_value
 
 			$$ = PT_NTH_VALUE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 of_analytic_lead_lag
@@ -16215,13 +16186,13 @@ of_analytic_lead_lag
 
 			$$ = PT_LEAD;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| LAG
 		{{
 
 			$$ = PT_LAG;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	/* functions that use other row values */
 	;
 
@@ -16231,13 +16202,13 @@ of_percentile
 		
 			$$ = PT_PERCENTILE_CONT;
 		
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PERCENTILE_DISC
 		{{
 		
 			$$ = PT_PERCENTILE_DISC;
 		
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 of_analytic_no_args
@@ -16246,29 +16217,29 @@ of_analytic_no_args
 
 			$$ = PT_ROW_NUMBER;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| RANK
 		{{
 
 			$$ = PT_RANK;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DENSE_RANK
 		{{
 
 			$$ = PT_DENSE_RANK;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CUME_DIST
 		{{
 			$$ = PT_CUME_DIST;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PERCENT_RANK
 		{{
 			$$ = PT_PERCENT_RANK;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	/* add other analytic functions here */
 	;
 
@@ -16283,21 +16254,21 @@ opt_group_concat_separator
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SEPARATOR char_string
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SEPARATOR bit_string_literal
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_agg_order_by
@@ -16306,14 +16277,14 @@ opt_agg_order_by
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ORDER BY sort_spec
 		{{
 
 			$$ = $3;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_analytic_from_last
@@ -16322,19 +16293,19 @@ opt_analytic_from_last
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| FROM FIRST
 		{{
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| FROM LAST
 		{{
 
 			$$ = PT_FROM_LAST;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_analytic_ignore_nulls
@@ -16343,19 +16314,19 @@ opt_analytic_ignore_nulls
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| RESPECT NULLS
 		{{
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| IGNORE_ NULLS
 		{{
 
 			$$ = PT_IGNORE_NULLS;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_analytic_partition_by
@@ -16364,7 +16335,7 @@ opt_analytic_partition_by
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PARTITION BY sort_spec_list
 		{{
 
@@ -16381,7 +16352,7 @@ opt_analytic_partition_by
 
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_over_analytic_partition_by
@@ -16391,14 +16362,14 @@ opt_over_analytic_partition_by
 			is_analytic_function = false;
 			$$ = NULL;
 			
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| OVER '(' opt_analytic_partition_by ')'
 		{{
 		
 			is_analytic_function = true;
 			$$= $3;
 		
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_analytic_order_by
@@ -16407,7 +16378,7 @@ opt_analytic_order_by
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ORDER BY sort_spec_list
 		{{
 
@@ -16423,7 +16394,7 @@ opt_analytic_order_by
 			  }
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 of_leading_trailing_both
@@ -16432,19 +16403,19 @@ of_leading_trailing_both
 
 			$$ = PT_LEADING;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TRAILING_
 		{{
 
 			$$ = PT_TRAILING;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| BOTH_
 		{{
 
 			$$ = PT_BOTH;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 case_expr
@@ -16452,7 +16423,7 @@ case_expr
 		{{
 			$$ = parser_make_expression (this_parser, PT_NULLIF, $3, $5, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COALESCE '(' expression_list ')'
 		{{
 			PT_NODE *prev, *expr, *arg, *tmp;
@@ -16518,7 +16489,7 @@ case_expr
 			$$ = expr;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CASE expression_ simple_when_clause_list opt_else_expr END
 		{{
 
@@ -16576,7 +16547,7 @@ case_expr
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CASE searched_when_clause_list opt_else_expr END
 		{{
 
@@ -16621,7 +16592,7 @@ case_expr
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_else_expr
@@ -16630,14 +16601,14 @@ opt_else_expr
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ELSE expression_
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 simple_when_clause_list
@@ -16647,14 +16618,14 @@ simple_when_clause_list
 			$$ = parser_make_link ($1, $2);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| simple_when_clause
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 simple_when_clause
@@ -16686,7 +16657,7 @@ simple_when_clause
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 searched_when_clause_list
@@ -16696,14 +16667,14 @@ searched_when_clause_list
 			$$ = parser_make_link ($1, $2);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| searched_when_clause
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 searched_when_clause
@@ -16731,7 +16702,7 @@ searched_when_clause
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -16746,7 +16717,7 @@ extract_expr
 			$$ = tmp;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 adddate_name
@@ -16765,121 +16736,121 @@ datetime_field
 
 			$$ = PT_YEAR;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| MONTH_
 		{{
 
 			$$ = PT_MONTH;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DAY_
 		{{
 
 			$$ = PT_DAY;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| HOUR_
 		{{
 
 			$$ = PT_HOUR;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| MINUTE_
 		{{
 
 			$$ = PT_MINUTE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SECOND_
 		{{
 
 			$$ = PT_SECOND;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| MILLISECOND_
 		{{
 
 			$$ = PT_MILLISECOND;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| WEEK
 		{{
 
 			$$ = PT_WEEK;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| QUARTER
 		{{
 
 			$$ = PT_QUARTER;
 
-    		DBG_PRINT}}
+    		DBG_PRINT;}}
         | SECOND_MILLISECOND
 		{{
 
 			$$ = PT_SECOND_MILLISECOND;
 
-    		DBG_PRINT}}
+    		DBG_PRINT;}}
 	| MINUTE_MILLISECOND
 		{{
 
 			$$ = PT_MINUTE_MILLISECOND;
 
-    		DBG_PRINT}}
+    		DBG_PRINT;}}
 	| MINUTE_SECOND
 		{{
 
 			$$ = PT_MINUTE_SECOND;
 
-    		DBG_PRINT}}
+    		DBG_PRINT;}}
 	| HOUR_MILLISECOND
 		{{
 
 			$$ = PT_HOUR_MILLISECOND;
 
-    		DBG_PRINT}}
+    		DBG_PRINT;}}
 	| HOUR_SECOND
 		{{
 
 			$$ = PT_HOUR_SECOND;
 
-    		DBG_PRINT}}
+    		DBG_PRINT;}}
 	| HOUR_MINUTE
 		{{
 
 			$$ = PT_HOUR_MINUTE;
 
-    		DBG_PRINT}}
+    		DBG_PRINT;}}
 	| DAY_MILLISECOND
 		{{
 
 			$$ = PT_DAY_MILLISECOND;
 
-    		DBG_PRINT}}
+    		DBG_PRINT;}}
 	| DAY_SECOND
 		{{
 
 			$$ = PT_DAY_SECOND;
 
-    		DBG_PRINT}}
+    		DBG_PRINT;}}
 	| DAY_MINUTE
 		{{
 
 			$$ = PT_DAY_MINUTE;
 
-    		DBG_PRINT}}
+    		DBG_PRINT;}}
 	| DAY_HOUR
 		{{
 
 			$$ = PT_DAY_HOUR;
 
-    		DBG_PRINT}}
+    		DBG_PRINT;}}
 	| YEAR_MONTH
 		{{
 
 			$$ = PT_YEAR_MONTH;
 
-    		DBG_PRINT}}
+    		DBG_PRINT;}}
 	;
 
 opt_on_target
@@ -16887,15 +16858,13 @@ opt_on_target
 		{{
 
 			$$ = NULL;
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ON_ primary
 		{{
 
 			$$ = $2;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 generic_function
@@ -16922,7 +16891,7 @@ generic_function
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 generic_function_id
@@ -16964,8 +16933,36 @@ generic_function_id
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
+
+can_cast_func
+    : tokCAN_CAST '(' expression_ ',' primitive_type ')'
+        {{
+            DBG("can_cast_func := tokCAN_CAST '(' expression_ ',' primitive_type ')'\n");
+            PT_NODE* exprNode = $3;//no need to check pointers???
+            PT_NODE* dataTypeNode = CONTAINER_AT_1($5);
+            if(!dataTypeNode)
+            {
+                dataTypeNode = parser_new_node(this_parser, PT_DATA_TYPE);
+                if(dataTypeNode)
+                {
+                    dataTypeNode->type_enum = TO_NUMBER(CONTAINER_AT_0($5));
+                    dataTypeNode->data_type = NULL;
+                }
+            }
+            PT_NODE* canCastNode = parser_make_expression(this_parser, PT_OP_CAN_CAST, exprNode, NULL, NULL);
+            canCastNode->info.expr.cast_type = dataTypeNode;
+            {
+                bool isConstExpr = pt_is_const_expr_node(exprNode);
+                DBG("    pt_is_const_expr_node(exprNode)=%s\n", isConstExpr?"true":"false");
+                canCastNode->do_not_fold = (isConstExpr ? 0 : 1);
+            }
+            {
+                $$ = canCastNode;
+            }
+        }}
+    ;
 
 opt_expression_list
 	: /* empty */
@@ -16973,14 +16970,14 @@ opt_expression_list
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| expression_list
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 table_set_function_call
@@ -16997,7 +16994,7 @@ table_set_function_call
 			$$ = func_node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SEQUENCE subquery
 		{{
 
@@ -17011,7 +17008,7 @@ table_set_function_call
 			$$ = func_node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| LIST subquery
 		{{
 
@@ -17025,7 +17022,7 @@ table_set_function_call
 			$$ = func_node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| MULTISET subquery
 		{{
 
@@ -17039,7 +17036,7 @@ table_set_function_call
 			$$ = func_node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 search_condition
@@ -17050,14 +17047,14 @@ search_condition
 			$$ = parser_make_expression (this_parser, PT_OR, arg1, arg2, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| boolean_term_xor
 		{{
 
 			$$ = pt_convert_to_logical_expr(this_parser, $1, 1, 1);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 boolean_term_xor
@@ -17068,13 +17065,13 @@ boolean_term_xor
 			$$ = parser_make_expression (this_parser, PT_XOR, arg1, arg2, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| boolean_term_is
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 boolean_term_is
@@ -17084,14 +17081,14 @@ boolean_term_is
 			$$ = parser_make_expression (this_parser, $2, arg, $3, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| boolean_term
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 is_op
@@ -17100,13 +17097,13 @@ is_op
 
 			$$ = PT_IS_NOT;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| IS
 		{{
 
 			$$ = PT_IS;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 boolean_term
@@ -17117,14 +17114,14 @@ boolean_term
 			$$ = parser_make_expression (this_parser, PT_AND, arg1, arg2, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| boolean_factor
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 boolean_factor
@@ -17135,7 +17132,7 @@ boolean_factor
 			$$ = parser_make_expression (this_parser, PT_NOT, arg, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '!' predicate
 		{{
 
@@ -17143,14 +17140,14 @@ boolean_factor
 			$$ = parser_make_expression (this_parser, PT_NOT, arg, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| predicate
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 predicate
@@ -17160,14 +17157,14 @@ predicate
 			$$ = parser_make_expression (this_parser, PT_EXISTS, $2, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| expression_
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 predicate_expression
@@ -17178,7 +17175,7 @@ predicate_expression
 			if (join_type == PT_JOIN_RIGHT_OUTER)
 			  parser_restore_wjc ();
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	  opt_paren_plus
 		{{
 
@@ -17261,7 +17258,7 @@ predicate_expression
 			$$ = e;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -17372,7 +17369,7 @@ predicate_expr_sub
 			$$ = e;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| pred_lhs like_op normal_expression ESCAPE escape_literal
 		{{
 
@@ -17381,7 +17378,7 @@ predicate_expr_sub
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| pred_lhs like_op normal_expression
 		{{
 
@@ -17396,7 +17393,7 @@ predicate_expr_sub
 			$$ = parser_make_expression (this_parser, $2, $1, $3, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| pred_lhs rlike_op normal_expression
 		{{
 
@@ -17416,21 +17413,21 @@ predicate_expr_sub
 			  }
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| pred_lhs null_op
 		{{
 
 			$$ = parser_make_expression (this_parser, $2, $1, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| pred_lhs set_op normal_expression
 		{{
 
 			$$ = parser_make_expression (this_parser, $2, $1, $3, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| pred_lhs between_op normal_expression AND normal_expression
 		{{
 
@@ -17438,7 +17435,7 @@ predicate_expr_sub
 			$$ = parser_make_expression (this_parser, $2, $1, node, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| pred_lhs in_op in_pred_operand
 		{{
 
@@ -17567,7 +17564,7 @@ predicate_expr_sub
 
 			$$ = node;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 	| pred_lhs RANGE_ '(' range_list ')'
 		{{
@@ -17575,13 +17572,13 @@ predicate_expr_sub
 			$$ = parser_make_expression (this_parser, PT_RANGE, $1, $4, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| pred_lhs IdName
 		{{
 			PT_ERRORm (this_parser, $1, MSGCAT_SET_PARSER_SYNTAX,
 				    MSGCAT_SYNTAX_INVALID_RELATIONAL_OP);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 pred_lhs
@@ -17600,7 +17597,7 @@ pred_lhs
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_paren_plus
@@ -17609,13 +17606,13 @@ opt_paren_plus
 
 			$$ = 0;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| paren_plus
 		{{
 
 			$$ = 1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 comp_op
@@ -17638,7 +17635,7 @@ comp_op
 			    break;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COMP_NOT_EQ opt_of_all_some_any
 		{{
 
@@ -17658,7 +17655,7 @@ comp_op
 			    break;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '>' opt_of_all_some_any
 		{{
 
@@ -17678,7 +17675,7 @@ comp_op
 			    break;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COMP_GE opt_of_all_some_any
 		{{
 
@@ -17698,7 +17695,7 @@ comp_op
 			    break;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '<'  opt_of_all_some_any
 		{{
 
@@ -17718,7 +17715,7 @@ comp_op
 			    break;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COMP_LE opt_of_all_some_any
 		{{
 
@@ -17738,27 +17735,27 @@ comp_op
 			    break;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '=''=' opt_of_all_some_any
 		{{
 
 			push_msg (MSGCAT_SYNTAX_INVALID_EQUAL_OP);
 			csql_yyerror_explicit (@1.first_line, @1.first_column);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '!''=' opt_of_all_some_any
 		{{
 
 			push_msg (MSGCAT_SYNTAX_INVALID_NOT_EQUAL);
 			csql_yyerror_explicit (@1.first_line, @1.first_column);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COMP_NULLSAFE_EQ opt_of_all_some_any
 		{{
 
 			$$ = PT_NULLSAFE_EQ;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_of_all_some_any
@@ -17767,25 +17764,25 @@ opt_of_all_some_any
 
 			$$ = 0;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ALL
 		{{
 
 			$$ = 1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SOME
 		{{
 
 			$$ = 2;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ANY
 		{{
 
 			$$ = 3;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 like_op
@@ -17794,13 +17791,13 @@ like_op
 
 			$$ = PT_NOT_LIKE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| LIKE
 		{{
 
 			$$ = PT_LIKE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 rlike_op
@@ -17809,25 +17806,25 @@ rlike_op
 
 			$$ = PT_RLIKE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NOT rlike_or_regexp
 		{{
 
 			$$ = PT_NOT_RLIKE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| rlike_or_regexp BINARY
 		{{
 
 			$$ = PT_RLIKE_BINARY;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NOT rlike_or_regexp BINARY
 		{{
 
 			$$ = PT_NOT_RLIKE_BINARY;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 rlike_or_regexp
@@ -17841,13 +17838,13 @@ null_op
 
 			$$ = PT_IS_NOT_NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| IS Null
 		{{
 
 			$$ = PT_IS_NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -17857,13 +17854,13 @@ between_op
 
 			$$ = PT_NOT_BETWEEN;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| BETWEEN
 		{{
 
 			$$ = PT_BETWEEN;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 in_op
@@ -17872,13 +17869,13 @@ in_op
 
 			$$ = PT_IS_IN;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NOT IN_
 		{{
 
 			$$ = PT_IS_NOT_IN;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 in_pred_operand
@@ -17919,7 +17916,7 @@ in_pred_operand
 			  }
 
 			$$ = ctn;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 range_list
@@ -17929,14 +17926,14 @@ range_list
 			$$ = parser_make_link_or ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| range_
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 range_
@@ -17946,63 +17943,63 @@ range_
 			$$ = parser_make_expression (this_parser, PT_BETWEEN_GE_LE, $1, $3, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| expression_ GE_LT_ expression_
 		{{
 
 			$$ = parser_make_expression (this_parser, PT_BETWEEN_GE_LT, $1, $3, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| expression_ GT_LE_ expression_
 		{{
 
 			$$ = parser_make_expression (this_parser, PT_BETWEEN_GT_LE, $1, $3, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| expression_ GT_LT_ expression_
 		{{
 
 			$$ = parser_make_expression (this_parser, PT_BETWEEN_GT_LT, $1, $3, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| expression_ '='
 		{{
 
 			$$ = parser_make_expression (this_parser, PT_BETWEEN_EQ_NA, $1, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| expression_ GE_INF_ Max
 		{{
 
 			$$ = parser_make_expression (this_parser, PT_BETWEEN_GE_INF, $1, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| expression_ GT_INF_ Max
 		{{
 
 			$$ = parser_make_expression (this_parser, PT_BETWEEN_GT_INF, $1, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| Min INF_LE_ expression_
 		{{
 
 			$$ = parser_make_expression (this_parser, PT_BETWEEN_INF_LE, $3, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| Min INF_LT_ expression_
 		{{
 
 			$$ = parser_make_expression (this_parser, PT_BETWEEN_INF_LT, $3, NULL, NULL);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 set_op
@@ -18011,37 +18008,37 @@ set_op
 
 			$$ = PT_SETEQ;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SETNEQ
 		{{
 
 			$$ = PT_SETNEQ;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SUBSET
 		{{
 
 			$$ = PT_SUBSET;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SUBSETEQ
 		{{
 
 			$$ = PT_SUBSETEQ;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SUPERSETEQ
 		{{
 
 			$$ = PT_SUPERSETEQ;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SUPERSET
 		{{
 
 			$$ = PT_SUPERSET;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 subquery
@@ -18061,7 +18058,7 @@ subquery
 			$$ = stmt;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -18077,14 +18074,14 @@ path_expression
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| path_header path_dot IDENTITY		%dprec 5
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| path_header path_dot OBJECT		%dprec 4
 		{{
 
@@ -18097,7 +18094,7 @@ path_expression
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| path_header DOT '*'			%dprec 3
 		{{
 
@@ -18117,7 +18114,7 @@ path_expression
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| path_id_list				%dprec 2
 		{{
 			PT_NODE *dot;
@@ -18192,7 +18189,7 @@ path_expression
 			$$ = dot;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 path_id_list
@@ -18209,14 +18206,14 @@ path_id_list
 			$$ = dot;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| path_header					%dprec 2
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 path_header
@@ -18226,7 +18223,7 @@ path_header
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CLASS path_id
 		{{
 
@@ -18235,7 +18232,7 @@ path_header
 			  node->info.name.meta_class = PT_META_CLASS;
 			$$ = node;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| path_id
 		{{
 
@@ -18245,7 +18242,7 @@ path_header
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 path_dot
@@ -18265,28 +18262,28 @@ path_id
 			$$ = name;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| identifier
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| generic_function_id
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| table_set_function_call
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 simple_path_id
@@ -18303,14 +18300,14 @@ simple_path_id
 			$$ = dot;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| identifier
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_in_out
@@ -18319,25 +18316,25 @@ opt_in_out
 
 			$$ = PT_NOPUT;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| IN_
 		{{
 
 			$$ = PT_INPUT;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| OUT_
 		{{
 
 			$$ = PT_OUTPUT;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INOUT
 		{{
 
 			$$ = PT_INPUTOUTPUT;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 negative_prec_cast_type
@@ -18346,19 +18343,19 @@ negative_prec_cast_type
 
 			$$ = PT_TYPE_CHAR;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NATIONAL CHAR_
 		{{
 
 			$$ = PT_TYPE_NCHAR;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NCHAR
 		{{
 
 			$$ = PT_TYPE_NCHAR;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 of_cast_data_type
@@ -18366,7 +18363,7 @@ of_cast_data_type
 		{{
 			$$ = $1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| negative_prec_cast_type '(' '-' unsigned_integer ')' opt_charset opt_collation
 		{{
 			container_2 ctn;
@@ -18441,7 +18438,7 @@ of_cast_data_type
 			    parser_free_node (this_parser, coll_node);
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 data_type
@@ -18469,7 +18466,7 @@ data_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (typ), dt);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| nested_set '(' data_type_list ')'
 		{{
 
@@ -18483,7 +18480,7 @@ data_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (typ), dt);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| nested_set '(' ')'
 		{{
 
@@ -18494,7 +18491,7 @@ data_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (typ), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| nested_set set_type
 		{{
 
@@ -18513,7 +18510,7 @@ data_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (typ), dt);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| set_type
 		{{
 
@@ -18523,13 +18520,13 @@ data_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (typ), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| primitive_type
 		{{
 
 			$$ = $1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 nested_set
@@ -18538,13 +18535,13 @@ nested_set
 
 			$$ = $1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| set_type
 		{{
 
 			$$ = $1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 data_type_list
@@ -18580,7 +18577,7 @@ data_type_list
 			$$ = parser_make_link ($1, dt);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| data_type
 		{{
 
@@ -18613,7 +18610,7 @@ data_type_list
 			$$ = dt;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 char_bit_type
@@ -18625,13 +18622,13 @@ char_bit_type
 			else
 			  $$ = PT_TYPE_CHAR;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| VARCHAR
 		{{
 
 			$$ = PT_TYPE_VARCHAR;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NATIONAL CHAR_ opt_varying
 		{{
 
@@ -18640,7 +18637,7 @@ char_bit_type
 			else
 			  $$ = PT_TYPE_NCHAR;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NCHAR	opt_varying
 		{{
 
@@ -18649,7 +18646,7 @@ char_bit_type
 			else
 			  $$ = PT_TYPE_NCHAR;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| BIT opt_varying
 		{{
 
@@ -18658,7 +18655,7 @@ char_bit_type
 			else
 			  $$ = PT_TYPE_BIT;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_varying
@@ -18667,13 +18664,13 @@ opt_varying
 
 			$$ = 0;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| VARYING
 		{{
 
 			$$ = 1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 primitive_type
@@ -18684,7 +18681,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_INTEGER), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SmallInt
 		{{
 
@@ -18692,7 +18689,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_SMALLINT), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| BIGINT
 		{{
 
@@ -18700,7 +18697,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_BIGINT), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| Double PRECISION
 		{{
 
@@ -18708,7 +18705,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_DOUBLE), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| Double
 		{{
 
@@ -18716,7 +18713,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_DOUBLE), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| Date
 		{{
 
@@ -18724,7 +18721,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_DATE), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| Time
 		{{
 
@@ -18732,7 +18729,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_TIME), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| Utime
 		{{
 
@@ -18740,7 +18737,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_TIMESTAMP), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TIMESTAMP
 		{{
 
@@ -18748,7 +18745,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_TIMESTAMP), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TIMESTAMP WITH Time ZONE
 		{{
 
@@ -18756,7 +18753,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_TIMESTAMPTZ), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TIMESTAMPTZ
 		{{
 
@@ -18764,7 +18761,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_TIMESTAMPTZ), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}		
+		DBG_PRINT;}}		
 	| TIMESTAMP WITH LOCAL Time ZONE
 		{{
 
@@ -18772,7 +18769,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_TIMESTAMPLTZ), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TIMESTAMPLTZ
 		{{
 
@@ -18780,7 +18777,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_TIMESTAMPLTZ), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}		
+		DBG_PRINT;}}		
 	| DATETIME
 		{{
 
@@ -18788,7 +18785,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_DATETIME), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DATETIME WITH Time ZONE
 		{{
 
@@ -18796,7 +18793,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_DATETIMETZ), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DATETIMETZ
 		{{
 
@@ -18804,7 +18801,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_DATETIMETZ), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}		
+		DBG_PRINT;}}		
 	| DATETIME WITH LOCAL Time ZONE
 		{{
 
@@ -18812,7 +18809,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_DATETIMELTZ), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DATETIMELTZ
 		{{
 
@@ -18820,7 +18817,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_DATETIMELTZ), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| Monetary
 		{{
 
@@ -18828,7 +18825,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_MONETARY), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| OBJECT
 		{{
 
@@ -18836,7 +18833,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_OBJECT), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| String
 	  opt_charset
 	  opt_collation
@@ -18898,7 +18895,7 @@ primitive_type
 			    parser_free_node (this_parser, coll_node);
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| BLOB_ opt_internal_external
 		{{
 
@@ -18906,7 +18903,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_BLOB), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CLOB_ opt_internal_external
 		{{
 
@@ -18914,7 +18911,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_CLOB), NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| class_name opt_identity
 		{{
 
@@ -18932,7 +18929,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (typ), dt);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| char_bit_type
 	  opt_prec_1
 	  opt_charset
@@ -19098,7 +19095,7 @@ primitive_type
 			    parser_free_node (this_parser, coll_node);
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NUMERIC opt_prec_2
 		{{
 
@@ -19146,7 +19143,7 @@ primitive_type
 			if (scale)
 			  parser_free_node (this_parser, scale);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
    	| FLOAT_ opt_prec_1
 		{{
 
@@ -19192,7 +19189,7 @@ primitive_type
 			if (prec)
 			  parser_free_node (this_parser, prec);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ENUM '(' char_string_literal_list ')' opt_charset opt_collation
 	  {{
 			container_2 ctn;
@@ -19301,7 +19298,7 @@ primitive_type
 			SET_CONTAINER_2 (ctn, FROM_NUMBER (PT_TYPE_ENUMERATION), dt);
 
 			$$ = ctn;
-	  DBG_PRINT}}
+	  DBG_PRINT;}}
 	;
 
 opt_internal_external
@@ -19310,19 +19307,19 @@ opt_internal_external
 
 			$$ = 0;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INTERNAL
 		{{
 
 			$$ = PT_LOB_INTERNAL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| EXTERNAL
 		{{
 
 			$$ = PT_LOB_EXTERNAL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_identity
@@ -19331,13 +19328,13 @@ opt_identity
 
 			$$ = 0;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| IDENTITY
 		{{
 
 			$$ = 1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_prec_1
@@ -19346,13 +19343,13 @@ opt_prec_1
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '(' unsigned_integer ')'
 		{{
 
 			$$ = $2;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_padding
@@ -19361,13 +19358,13 @@ opt_padding
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '(' unsigned_integer ')'
 		{{
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_prec_2
@@ -19378,7 +19375,7 @@ opt_prec_2
 			SET_CONTAINER_2 (ctn, NULL, NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '(' unsigned_integer ')'
 		{{
 
@@ -19386,7 +19383,7 @@ opt_prec_2
 			SET_CONTAINER_2 (ctn, $2, NULL);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '(' unsigned_integer ',' unsigned_integer ')'
 		{{
 
@@ -19394,7 +19391,7 @@ opt_prec_2
 			SET_CONTAINER_2 (ctn, $2, $4);
 			$$ = ctn;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 of_charset
@@ -19408,13 +19405,13 @@ opt_collation
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| collation_spec
 		{{
 
 			$$=$1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 collation_spec
@@ -19423,7 +19420,7 @@ collation_spec
 
 			$$ = $2;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COLLATE BINARY
 		{{
 			PT_NODE *node;
@@ -19440,7 +19437,7 @@ collation_spec
 			  }
 
 			$$ = node;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COLLATE IdName
 		{{
 			PT_NODE *node;
@@ -19457,7 +19454,7 @@ collation_spec
 			  }
 
 			$$ = node;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 class_comment_spec
@@ -19480,7 +19477,7 @@ class_comment_spec
 			  }
 
 			$$ = node;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_vclass_comment_spec
@@ -19522,7 +19519,7 @@ comment_value
 			  }
 
 			$$ = node;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_charset
@@ -19531,13 +19528,13 @@ opt_charset
 
 			$$ = NULL;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| charset_spec
 		{{
 
 			$$ = $1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 charset_spec
@@ -19546,7 +19543,7 @@ charset_spec
 
 			$$ = $2;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_charset BINARY
 		{{
 			PT_NODE *node;
@@ -19563,7 +19560,7 @@ charset_spec
 			  }
 
 			$$ = node;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_charset IdName
 		{{
 			PT_NODE *node;
@@ -19580,7 +19577,7 @@ charset_spec
 			  }
 
 			$$ = node;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_using_charset
@@ -19600,7 +19597,7 @@ opt_using_charset
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| USING char_string_literal
 		{{
 
@@ -19627,7 +19624,7 @@ opt_using_charset
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| USING IdName
 		{{
 
@@ -19666,7 +19663,7 @@ opt_using_charset
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| USING BINARY
 		{{
 
@@ -19682,7 +19679,7 @@ opt_using_charset
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 set_type
@@ -19691,25 +19688,25 @@ set_type
 
 			$$ = PT_TYPE_SET;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| MULTISET_OF
 		{{
 
 			$$ = PT_TYPE_MULTISET;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SEQUENCE_OF
 		{{
 
 			$$ = PT_TYPE_SEQUENCE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_container opt_of
 		{{
 
 			$$ = $1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_of
@@ -19724,7 +19721,7 @@ signed_literal_
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '-' unsigned_integer
 		{{
 
@@ -19773,7 +19770,7 @@ signed_literal_
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '-' unsigned_real
 		{{
 
@@ -19813,7 +19810,7 @@ signed_literal_
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '-' monetary_literal
 		{{
 
@@ -19834,7 +19831,7 @@ signed_literal_
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 literal_
@@ -19844,14 +19841,14 @@ literal_
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| param_
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 literal_w_o_param
@@ -19861,21 +19858,21 @@ literal_w_o_param
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| unsigned_real
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| monetary_literal
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| char_string_literal
 		{{
 
@@ -19886,21 +19883,21 @@ literal_w_o_param
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| bit_string_literal
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| host_param_input
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| Null
 		{{
 
@@ -19910,14 +19907,14 @@ literal_w_o_param
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| constant_set
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NA
 		{{
 
@@ -19927,21 +19924,21 @@ literal_w_o_param
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| date_or_time_literal
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| boolean
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 boolean
@@ -19958,7 +19955,7 @@ boolean
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| False
 		{{
 
@@ -19972,7 +19969,7 @@ boolean
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| UNKNOWN
 		{{
 
@@ -19982,7 +19979,7 @@ boolean
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 constant_set
@@ -20013,7 +20010,7 @@ constant_set
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| opt_of_container '{' '}'
 		{{
 
@@ -20028,7 +20025,7 @@ constant_set
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_of_container
@@ -20037,13 +20034,13 @@ opt_of_container
 
 			$$ = PT_TYPE_SEQUENCE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| of_container
 		{{
 
 			$$ = $1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 of_container
@@ -20052,25 +20049,25 @@ of_container
 
 			$$ = PT_TYPE_SET;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| MULTISET
 		{{
 
 			$$ = PT_TYPE_MULTISET;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SEQUENCE
 		{{
 
 			$$ = PT_TYPE_SEQUENCE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| LIST
 		{{
 
 			$$ = PT_TYPE_SEQUENCE;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 identifier_list
@@ -20080,25 +20077,25 @@ identifier_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| identifier
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_bracketed_identifier_list
 	:	/* EMPTY */
 		{{
 			$$ = NULL;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '(' identifier_list ')'
 		{{
 			$$ = $2;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 simple_path_id_list
@@ -20108,14 +20105,14 @@ simple_path_id_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| simple_path_id
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 identifier
@@ -20138,7 +20135,7 @@ identifier
 			  }
 			$$ = p;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| BracketDelimitedIdName
 		{{
 
@@ -20158,7 +20155,7 @@ identifier
 			  }
 			$$ = p;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| BacktickDelimitedIdName
 		{{
 
@@ -20178,7 +20175,7 @@ identifier
 			  }
 			$$ = p;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DelimitedIdName
 		{{
 
@@ -20198,7 +20195,7 @@ identifier
 			  }
 			$$ = p;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 /*{{{*/
 	| ACTIVE
 		{{
@@ -20209,7 +20206,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ANALYZE
 		{{
 
@@ -20219,7 +20216,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ARCHIVE
 		{{
 
@@ -20229,7 +20226,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| AUTO_INCREMENT
 		{{
 
@@ -20239,7 +20236,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CACHE
 		{{
 
@@ -20249,7 +20246,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CAPACITY
 		{{
 
@@ -20259,7 +20256,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CHARACTER_SET_
 		{{
 
@@ -20269,7 +20266,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CHARSET
 		{{
 
@@ -20279,7 +20276,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CHR
 		{{
 
@@ -20289,7 +20286,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CLOB_TO_CHAR
 		{{
 
@@ -20299,7 +20296,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}		
+		DBG_PRINT;}}		
 	| CLOSE
 		{{
 
@@ -20309,7 +20306,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}		
+		DBG_PRINT;}}		
 	| COLLATION
 		{{
 
@@ -20319,7 +20316,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COLUMNS
 		{{
 
@@ -20329,7 +20326,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COMMENT
 		{{
 
@@ -20339,7 +20336,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COMMITTED
 		{{
 
@@ -20349,7 +20346,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COST
 		{{
 
@@ -20359,7 +20356,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CRITICAL
 		{{
 			PT_NODE *p = parser_new_node (this_parser, PT_NAME);
@@ -20368,7 +20365,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CUME_DIST
 		{{
 			PT_NODE *p = parser_new_node (this_parser, PT_NAME);
@@ -20379,7 +20376,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DECREMENT
 		{{
 
@@ -20389,7 +20386,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DENSE_RANK
 		{{
 
@@ -20399,7 +20396,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ELT
 		{{
 
@@ -20409,7 +20406,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| EXPLAIN
 		{{
 
@@ -20419,7 +20416,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}		
+		DBG_PRINT;}}		
         | FULLSCAN
                 {{
 
@@ -20429,7 +20426,7 @@ identifier
                         $$ = p;
                         PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-                DBG_PRINT}}
+                DBG_PRINT;}}
 	| GE_INF_
 		{{
 
@@ -20439,7 +20436,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| GE_LE_
 		{{
 
@@ -20449,7 +20446,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| GE_LT_
 		{{
 
@@ -20459,7 +20456,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| GRANTS
 		{{
 
@@ -20469,7 +20466,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| GROUP_CONCAT
 		{{
 
@@ -20479,7 +20476,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| GROUPS
 		{{
 
@@ -20489,7 +20486,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| GT_INF_
 		{{
 
@@ -20499,7 +20496,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| GT_LE_
 		{{
 
@@ -20509,7 +20506,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| GT_LT_
 		{{
 
@@ -20519,7 +20516,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| HASH
 		{{
 
@@ -20529,7 +20526,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| HEADER
 		{{
 
@@ -20539,7 +20536,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| HEAP
 		{{
 
@@ -20549,7 +20546,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INACTIVE
 		{{
 
@@ -20559,7 +20556,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INCREMENT
 		{{
 
@@ -20569,7 +20566,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INDEX_PREFIX
 		{{
 
@@ -20579,7 +20576,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INDEXES
 		{{
 
@@ -20589,7 +20586,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}		
+		DBG_PRINT;}}		
 	| INFINITE_
 		{{
 
@@ -20599,7 +20596,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INF_LE_
 		{{
 
@@ -20609,7 +20606,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INF_LT_
 		{{
 
@@ -20619,7 +20616,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INSTANCES
 		{{
 
@@ -20629,7 +20626,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INVALIDATE
 		{{
 
@@ -20639,7 +20636,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| JAVA
 		{{
 
@@ -20649,7 +20646,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| JOB
 		{{
 
@@ -20659,7 +20656,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| JSON
 		{{
 
@@ -20668,7 +20665,7 @@ identifier
 			  p->info.name.original = $1;
 			$$ = p;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| KEYS
 		{{
 
@@ -20678,7 +20675,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| LAG
 		{{
 
@@ -20688,7 +20685,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| LEAD
 		{{
 
@@ -20698,7 +20695,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| LOCK_
 		{{
 
@@ -20708,7 +20705,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| LOG
 		{{
 
@@ -20718,7 +20715,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| MAXIMUM
 		{{
 
@@ -20728,7 +20725,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| MAXVALUE
 		{{
 
@@ -20738,7 +20735,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| MEMBERS
 		{{
 
@@ -20748,7 +20745,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| MINVALUE
 		{{
 
@@ -20758,7 +20755,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NAME
 		{{
 
@@ -20768,7 +20765,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NOCACHE
 		{{
 
@@ -20778,7 +20775,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NOMAXVALUE
 		{{
 
@@ -20788,7 +20785,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NOMINVALUE
 		{{
 
@@ -20798,7 +20795,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| OFFSET
 		{{
 
@@ -20808,7 +20805,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| OPEN
 		{{
 
@@ -20818,7 +20815,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| OWNER
 		{{
 
@@ -20828,7 +20825,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PAGE
 		{{
 
@@ -20838,7 +20835,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PARTITIONING
 		{{
 
@@ -20848,7 +20845,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PARTITIONS
 		{{
 
@@ -20858,7 +20855,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PASSWORD
 		{{
 
@@ -20868,7 +20865,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PERCENT_RANK
 		{{
 
@@ -20880,7 +20877,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PRINT
 		{{
 
@@ -20890,7 +20887,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PRIORITY
 		{{
 
@@ -20900,7 +20897,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| QUEUES
 		{{
 
@@ -20910,7 +20907,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| RANGE_
 		{{
 
@@ -20920,7 +20917,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| RANK
 		{{
 
@@ -20930,7 +20927,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| REJECT_
 		{{
 
@@ -20940,7 +20937,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| REMOVE
 		{{
 
@@ -20950,7 +20947,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| REORGANIZE
 		{{
 
@@ -20960,7 +20957,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| REPEATABLE
 		{{
 
@@ -20970,7 +20967,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| RETAIN
 		{{
 
@@ -20980,7 +20977,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| REUSE_OID
 		{{
 
@@ -20990,7 +20987,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| REVERSE
 		{{
 
@@ -21000,7 +20997,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DISK_SIZE
 		{{
 
@@ -21010,7 +21007,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ROW_NUMBER
 		{{
 
@@ -21020,7 +21017,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SECTIONS
 		{{
 
@@ -21030,7 +21027,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SEPARATOR
 		{{
 
@@ -21040,7 +21037,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SERIAL
 		{{
 
@@ -21050,7 +21047,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SHOW
 		{{
 
@@ -21060,7 +21057,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SLOTS
 		{{
 
@@ -21070,7 +21067,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SLOTTED
 		{{
 
@@ -21080,7 +21077,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| STABILITY
 		{{
 
@@ -21090,7 +21087,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| START_
 		{{
 
@@ -21100,7 +21097,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| STATEMENT
 		{{
 
@@ -21110,7 +21107,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| STATUS
 		{{
 
@@ -21120,7 +21117,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| STDDEV
 		{{
 
@@ -21130,7 +21127,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| STDDEV_POP
 		{{
 
@@ -21140,7 +21137,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| STDDEV_SAMP
 		{{
 
@@ -21150,7 +21147,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SYSTEM
 		{{
 
@@ -21160,7 +21157,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TABLES
 		{{
 
@@ -21170,7 +21167,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TEXT
 		{{
 
@@ -21179,7 +21176,7 @@ identifier
 			  p->info.name.original = $1;
 			$$ = p;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| THAN
 		{{
 
@@ -21189,7 +21186,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| THREADS
 		{{
 
@@ -21199,7 +21196,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TIMEOUT
 		{{
 
@@ -21209,7 +21206,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TRACE
 		{{
 
@@ -21219,7 +21216,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TRAN
 		{{
 
@@ -21229,7 +21226,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TRIGGERS
 		{{
 
@@ -21239,7 +21236,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| UNCOMMITTED
 		{{
 
@@ -21249,7 +21246,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| VAR_POP
 		{{
 
@@ -21259,7 +21256,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| VAR_SAMP
 		{{
 
@@ -21269,7 +21266,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| VARIANCE
 		{{
 
@@ -21279,7 +21276,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| VOLUME
 		{{
 
@@ -21289,7 +21286,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| WORKSPACE
 		{{
 
@@ -21299,7 +21296,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ADDDATE
 		{{
 
@@ -21309,7 +21306,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| BIT_AND
 		{{
 
@@ -21319,7 +21316,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| BIT_OR
 		{{
 
@@ -21329,7 +21326,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| BIT_XOR
 		{{
 
@@ -21339,7 +21336,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DATE_ADD
 		{{
 
@@ -21349,7 +21346,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DATE_SUB
 		{{
 
@@ -21359,7 +21356,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| IFNULL
 		{{
 
@@ -21369,7 +21366,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ISNULL
 		{{
 
@@ -21379,7 +21376,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| LCASE
 		{{
 
@@ -21389,7 +21386,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| QUARTER
 		{{
 
@@ -21399,7 +21396,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| STR_TO_DATE
 		{{
 
@@ -21409,7 +21406,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SUBDATE
 		{{
 
@@ -21419,7 +21416,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| UCASE
 		{{
 
@@ -21429,7 +21426,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| WEEK
 		{{
 
@@ -21439,7 +21436,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 /*}}}*/
 	| NTILE
 		{{
@@ -21453,7 +21450,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| FIRST_VALUE
 		{{
 
@@ -21466,7 +21463,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| LAST_VALUE
 		{{
 
@@ -21479,7 +21476,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NTH_VALUE
 		{{
 
@@ -21492,7 +21489,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| RESPECT
 		{{
 
@@ -21505,7 +21502,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NULLS
 		{{
 
@@ -21518,7 +21515,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| MEDIAN
 		{{
 		
@@ -21531,7 +21528,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 		
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PERCENTILE_CONT
 		{{
 		
@@ -21544,7 +21541,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 		
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PERCENTILE_DISC
 		{{
 		
@@ -21557,7 +21554,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 		
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| WITHIN
 		{{
 		
@@ -21570,7 +21567,7 @@ identifier
 			$$ = p;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 		
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 escape_literal
@@ -21581,7 +21578,7 @@ escape_literal
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}	
+		DBG_PRINT;}}	
 	| Null
 		{{
 
@@ -21591,7 +21588,7 @@ escape_literal
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 string_literal_or_input_hv
@@ -21605,14 +21602,14 @@ string_literal_or_input_hv
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| host_param_input
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
         ;
 
 
@@ -21633,14 +21630,14 @@ char_string_literal
 			$$ = str;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| char_string
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 char_string
@@ -21680,7 +21677,7 @@ char_string
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NCHAR_STRING
 		{{
 
@@ -21717,7 +21714,7 @@ char_string
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| BINARY_STRING
 		{{
 
@@ -21738,7 +21735,7 @@ char_string
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| EUCKR_STRING
 		{{
 
@@ -21759,7 +21756,7 @@ char_string
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}		
+		DBG_PRINT;}}		
 	| ISO_STRING
 		{{
 
@@ -21780,7 +21777,7 @@ char_string
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| UTF8_STRING
 		{{
 
@@ -21801,7 +21798,7 @@ char_string
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 
@@ -21822,14 +21819,14 @@ bit_string_literal
 			$$ = str;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| bit_string
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 bit_string
@@ -21850,7 +21847,7 @@ bit_string
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| HEX_STRING
 		{{
 
@@ -21868,7 +21865,7 @@ bit_string
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 unsigned_integer
@@ -21920,7 +21917,7 @@ unsigned_integer
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 unsigned_int32
@@ -21947,7 +21944,7 @@ unsigned_int32
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 unsigned_real
@@ -22002,7 +21999,7 @@ unsigned_real
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 monetary_literal
@@ -22023,7 +22020,7 @@ monetary_literal
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DOLLAR_SIGN of_integer_real_literal
 		{{
 
@@ -22041,7 +22038,7 @@ monetary_literal
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| WON_SIGN of_integer_real_literal
 		{{
 
@@ -22059,7 +22056,7 @@ monetary_literal
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TURKISH_LIRA_SIGN of_integer_real_literal
 		{{
 
@@ -22077,7 +22074,7 @@ monetary_literal
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| BRITISH_POUND_SIGN of_integer_real_literal
 		{{
 
@@ -22094,7 +22091,7 @@ monetary_literal
 
 			$$ = val;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CAMBODIAN_RIEL_SIGN of_integer_real_literal
 		{{
 
@@ -22111,7 +22108,7 @@ monetary_literal
 
 			$$ = val;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CHINESE_RENMINBI_SIGN of_integer_real_literal
 		{{
 
@@ -22128,7 +22125,7 @@ monetary_literal
 
 			$$ = val;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| INDIAN_RUPEE_SIGN of_integer_real_literal
 		{{
 
@@ -22145,7 +22142,7 @@ monetary_literal
 
 			$$ = val;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| RUSSIAN_RUBLE_SIGN of_integer_real_literal
 		{{
 
@@ -22162,7 +22159,7 @@ monetary_literal
 
 			$$ = val;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| AUSTRALIAN_DOLLAR_SIGN of_integer_real_literal
 		{{
 
@@ -22179,7 +22176,7 @@ monetary_literal
 
 			$$ = val;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CANADIAN_DOLLAR_SIGN of_integer_real_literal
 		{{
 
@@ -22196,7 +22193,7 @@ monetary_literal
 
 			$$ = val;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| BRASILIAN_REAL_SIGN of_integer_real_literal
 		{{
 
@@ -22213,7 +22210,7 @@ monetary_literal
 
 			$$ = val;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ROMANIAN_LEU_SIGN of_integer_real_literal
 		{{
 
@@ -22230,7 +22227,7 @@ monetary_literal
 
 			$$ = val;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| EURO_SIGN of_integer_real_literal
 		{{
 
@@ -22247,7 +22244,7 @@ monetary_literal
 
 			$$ = val;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SWISS_FRANC_SIGN of_integer_real_literal
 		{{
 
@@ -22264,7 +22261,7 @@ monetary_literal
 
 			$$ = val;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DANISH_KRONE_SIGN of_integer_real_literal
 		{{
 
@@ -22281,7 +22278,7 @@ monetary_literal
 
 			$$ = val;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| NORWEGIAN_KRONE_SIGN of_integer_real_literal
 		{{
 
@@ -22298,7 +22295,7 @@ monetary_literal
 
 			$$ = val;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| BULGARIAN_LEV_SIGN of_integer_real_literal
 		{{
 
@@ -22315,7 +22312,7 @@ monetary_literal
 
 			$$ = val;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| VIETNAMESE_DONG_SIGN of_integer_real_literal
 		{{
 
@@ -22332,7 +22329,7 @@ monetary_literal
 
 			$$ = val;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CZECH_KORUNA_SIGN of_integer_real_literal
 		{{
 
@@ -22349,7 +22346,7 @@ monetary_literal
 
 			$$ = val;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| POLISH_ZLOTY_SIGN of_integer_real_literal
 		{{
 
@@ -22366,7 +22363,7 @@ monetary_literal
 
 			$$ = val;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SWEDISH_KRONA_SIGN of_integer_real_literal
 		{{
 
@@ -22383,7 +22380,7 @@ monetary_literal
 
 			$$ = val;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| CROATIAN_KUNA_SIGN of_integer_real_literal
 		{{
 
@@ -22400,7 +22397,7 @@ monetary_literal
 
 			$$ = val;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| SERBIAN_DINAR_SIGN of_integer_real_literal
 		{{
 
@@ -22417,7 +22414,7 @@ monetary_literal
 
 			$$ = val;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 of_integer_real_literal
@@ -22426,19 +22423,19 @@ of_integer_real_literal
 
 			$$ = $1;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| opt_plus UNSIGNED_REAL
 		{{
 
 			$$ = $2;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| '-' UNSIGNED_REAL
 		{{
 
 			$$ = pt_append_string (this_parser, (char *) "-", $2);
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 date_or_time_literal
@@ -22450,7 +22447,7 @@ date_or_time_literal
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| Time CHAR_STRING
 		{{
 
@@ -22459,7 +22456,7 @@ date_or_time_literal
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TIMESTAMP CHAR_STRING
 		{{
 
@@ -22468,7 +22465,7 @@ date_or_time_literal
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TIMESTAMP WITH Time ZONE CHAR_STRING
 		{{
 
@@ -22477,7 +22474,7 @@ date_or_time_literal
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TIMESTAMPTZ CHAR_STRING
 		{{
 
@@ -22486,7 +22483,7 @@ date_or_time_literal
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TIMESTAMPLTZ CHAR_STRING
 		{{
 
@@ -22495,7 +22492,7 @@ date_or_time_literal
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| TIMESTAMP WITH LOCAL Time ZONE CHAR_STRING
 		{{
 
@@ -22504,7 +22501,7 @@ date_or_time_literal
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DATETIME CHAR_STRING
 		{{
 
@@ -22513,7 +22510,7 @@ date_or_time_literal
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DATETIME WITH Time ZONE CHAR_STRING
 		{{
 
@@ -22522,7 +22519,7 @@ date_or_time_literal
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DATETIMETZ CHAR_STRING
 		{{
 
@@ -22531,7 +22528,7 @@ date_or_time_literal
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DATETIMELTZ CHAR_STRING
 		{{
 
@@ -22540,7 +22537,7 @@ date_or_time_literal
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| DATETIME WITH LOCAL Time ZONE CHAR_STRING
 		{{
 
@@ -22549,7 +22546,7 @@ date_or_time_literal
 			$$ = val;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 create_as_clause
@@ -22558,7 +22555,7 @@ create_as_clause
 			container_2 ctn;
 			SET_CONTAINER_2(ctn, FROM_NUMBER ($1), $3);
 			$$ = ctn;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 partition_clause
@@ -22575,7 +22572,7 @@ partition_clause
 
 			$$ = qc;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PARTITION opt_by RANGE_ '(' expression_ ')' '(' partition_def_list ')'
 		{{
 
@@ -22591,7 +22588,7 @@ partition_clause
 			$$ = qc;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PARTITION opt_by LIST '(' expression_ ')' '(' partition_def_list ')'
 		{{
 
@@ -22607,7 +22604,7 @@ partition_clause
 			$$ = qc;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 opt_by
@@ -22622,14 +22619,14 @@ partition_def_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| partition_def
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 partition_def
@@ -22648,7 +22645,7 @@ partition_def
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PARTITION identifier VALUES LESS THAN '(' signed_literal_ ')' opt_comment_spec
 		{{
 
@@ -22664,7 +22661,7 @@ partition_def
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| PARTITION identifier VALUES IN_ '(' signed_literal_list ')' opt_comment_spec
 		{{
 
@@ -22680,7 +22677,7 @@ partition_def
 			$$ = node;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 alter_partition_clause_for_alter_list
@@ -22695,7 +22692,7 @@ alter_partition_clause_for_alter_list
 			    alt->info.alter.alter_clause.partition.info = $1;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| REMOVE PARTITIONING
 		{{
 
@@ -22704,7 +22701,7 @@ alter_partition_clause_for_alter_list
 			if (alt)
 			  alt->info.alter.code = PT_REMOVE_PARTITION;
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| REORGANIZE PARTITION identifier_list INTO '(' partition_def_list ')'
 		{{
 
@@ -22717,7 +22714,7 @@ alter_partition_clause_for_alter_list
 			    alt->info.alter.alter_clause.partition.parts = $6;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ANALYZE PARTITION opt_all
 		{{
 
@@ -22729,7 +22726,7 @@ alter_partition_clause_for_alter_list
 			    alt->info.alter.alter_clause.partition.name_list = NULL;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| ANALYZE PARTITION identifier_list
 		{{
 
@@ -22741,7 +22738,7 @@ alter_partition_clause_for_alter_list
 			    alt->info.alter.alter_clause.partition.name_list = $3;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| COALESCE PARTITION literal_w_o_param
 		{{
 
@@ -22753,7 +22750,7 @@ alter_partition_clause_for_alter_list
 			    alt->info.alter.alter_clause.partition.size = $3;
 			  }
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	 | PROMOTE PARTITION identifier_list
 		{{
 
@@ -22765,7 +22762,7 @@ alter_partition_clause_for_alter_list
 			    alt->info.alter.alter_clause.partition.name_list = $3;
 			  }
 
-		DBG_PRINT}}	 
+		DBG_PRINT;}}	 
 	;
 
 opt_all
@@ -22780,28 +22777,28 @@ execute_using_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| execute_using_list ',' signed_literal_
 		{{
 
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| session_variable_expression
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| signed_literal_
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 signed_literal_list
@@ -22811,14 +22808,14 @@ signed_literal_list
 			$$ = parser_make_link ($1, $3);
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	| signed_literal_
 		{{
 
 			$$ = $1;
 			PARSER_SAVE_ERR_CONTEXT ($$, @$.buffer_pos)
 
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 
 paren_plus
@@ -22851,7 +22848,7 @@ vacuum_stmt
 				    sizeof (PT_NODE));
 			  }
 			$$ = node;
-		DBG_PRINT}}
+		DBG_PRINT;}}
 	;
 			
 

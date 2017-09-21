@@ -50,6 +50,11 @@ extern int dot_flag;
 
 extern int str_identifier = '\0';
 
+#ifdef PARSER_DEBUG
+#define DBG(format, ...) printf("DBG [%s(%d)] " format, __FILE__, __LINE__, __VA_ARGS__)
+#else
+#define DBG(format, ...)
+#endif
 
 
 
@@ -157,6 +162,12 @@ int yybuffer_pos;
 [cC][aA][cC][hH][eE]							{ begin_token(yytext);
 										csql_yylval.cptr = pt_makename(yytext);
 										return CACHE; }
+[cC][aA][nN]_[cC][aA][sS][tT] {
+    begin_token(yytext);
+    csql_yylval.cptr = pt_makename(yytext);
+    DBG("token.CAN_CAST: %s\n", yytext);
+    return tokCAN_CAST;
+}
 [cC][aA][pP][aA][cC][iI][tT][yY]					{ begin_token(yytext);
 										csql_yylval.cptr = pt_makename(yytext);
 										return CAPACITY; }
