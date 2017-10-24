@@ -31,6 +31,9 @@
 
 #include "config.h"
 
+#include <assert.h>
+
+#include "porting.h"
 #include "dbdef.h"
 
 #ifdef __cplusplus
@@ -186,7 +189,7 @@ extern "C"
 #define DB_MAX_PARTITION_EXPR_LENGTH 2048
 
 /* Defines the state of a value as not being compressable due to its bad compression size or 
- * its uncompressed size being lower than PRIM_MINIMUM_STRING_LENGTH_FOR_COMPRESSION
+ * its uncompressed size being lower than OR_MINIMUM_STRING_LENGTH_FOR_COMPRESSION
  */
 #define DB_UNCOMPRESSABLE -1
 
@@ -1240,59 +1243,108 @@ extern "C"
   extern DB_DOMAIN *db_type_to_db_domain (DB_TYPE type);
   extern const char *db_default_expression_string (DB_DEFAULT_EXPR_TYPE default_expr_type);
 
-#ifdef __cplusplus
-}
-#endif				/* __cplusplus */
-
 /*
  * DB_GET_ accessor macros.
  * These macros can be used to extract a particular value from a
  * DB_VALUE structure. No type checking is done so you need to make sure
  * that the type is correct.
  */
-extern int db_get_int (const DB_VALUE * value);
-extern DB_C_SHORT db_get_short (const DB_VALUE * value);
-extern DB_BIGINT db_get_bigint (const DB_VALUE * value);
-extern DB_C_CHAR db_get_string (const DB_VALUE * value);
-extern DB_C_FLOAT db_get_float (const DB_VALUE * value);
-extern DB_C_DOUBLE db_get_double (const DB_VALUE * value);
-extern DB_OBJECT *db_get_object (const DB_VALUE * value);
-extern DB_COLLECTION *db_get_set (const DB_VALUE * value);
-extern DB_MIDXKEY *db_get_midxkey (const DB_VALUE * value);
-extern DB_C_POINTER db_get_pointer (const DB_VALUE * value);
-extern DB_TIME *db_get_time (const DB_VALUE * value);
-extern DB_TIMETZ *db_get_timetz (const DB_VALUE * value);
-extern DB_TIMESTAMP *db_get_timestamp (const DB_VALUE * value);
-extern DB_TIMESTAMPTZ *db_get_timestamptz (const DB_VALUE * value);
-extern DB_DATETIME *db_get_datetime (const DB_VALUE * value);
-extern DB_DATETIMETZ *db_get_datetimetz (const DB_VALUE * value);
-extern DB_DATE *db_get_date (const DB_VALUE * value);
-extern DB_MONETARY *db_get_monetary (const DB_VALUE * value);
-extern int db_get_error (const DB_VALUE * value);
-extern DB_ELO *db_get_elo (const DB_VALUE * value);
-extern DB_C_NUMERIC db_get_numeric (const DB_VALUE * value);
-extern DB_C_BIT db_get_bit (const DB_VALUE * value, int *length);
-extern DB_C_CHAR db_get_char (const DB_VALUE * value, int *length);
-extern DB_C_NCHAR db_get_nchar (const DB_VALUE * value, int *length);
-extern int db_get_string_size (const DB_VALUE * value);
-extern DB_C_SHORT db_get_enum_short (const DB_VALUE * value);
-extern DB_C_CHAR db_get_enum_string (const DB_VALUE * value);
-extern int db_get_enum_string_size (const DB_VALUE * value);
-extern DB_C_CHAR db_get_method_error_msg (void);
+  extern int db_get_int (const DB_VALUE * value);
+  extern DB_C_SHORT db_get_short (const DB_VALUE * value);
+  extern DB_BIGINT db_get_bigint (const DB_VALUE * value);
+  extern DB_C_CHAR db_get_string (const DB_VALUE * value);
+  extern DB_C_FLOAT db_get_float (const DB_VALUE * value);
+  extern DB_C_DOUBLE db_get_double (const DB_VALUE * value);
+  extern DB_OBJECT *db_get_object (const DB_VALUE * value);
+  extern DB_COLLECTION *db_get_set (const DB_VALUE * value);
+  extern DB_MIDXKEY *db_get_midxkey (const DB_VALUE * value);
+  extern DB_C_POINTER db_get_pointer (const DB_VALUE * value);
+  extern DB_TIME *db_get_time (const DB_VALUE * value);
+  extern DB_TIMETZ *db_get_timetz (const DB_VALUE * value);
+  extern DB_TIMESTAMP *db_get_timestamp (const DB_VALUE * value);
+  extern DB_TIMESTAMPTZ *db_get_timestamptz (const DB_VALUE * value);
+  extern DB_DATETIME *db_get_datetime (const DB_VALUE * value);
+  extern DB_DATETIMETZ *db_get_datetimetz (const DB_VALUE * value);
+  extern DB_DATE *db_get_date (const DB_VALUE * value);
+  extern DB_MONETARY *db_get_monetary (const DB_VALUE * value);
+  extern int db_get_error (const DB_VALUE * value);
+  extern DB_ELO *db_get_elo (const DB_VALUE * value);
+  extern DB_C_NUMERIC db_get_numeric (const DB_VALUE * value);
+  extern DB_C_BIT db_get_bit (const DB_VALUE * value, int *length);
+  extern DB_C_CHAR db_get_char (const DB_VALUE * value, int *length);
+  extern DB_C_NCHAR db_get_nchar (const DB_VALUE * value, int *length);
+  extern int db_get_string_size (const DB_VALUE * value);
+  extern DB_C_SHORT db_get_enum_short (const DB_VALUE * value);
+  extern DB_C_CHAR db_get_enum_string (const DB_VALUE * value);
+  extern int db_get_enum_string_size (const DB_VALUE * value);
+  extern DB_C_CHAR db_get_method_error_msg (void);
 
-extern DB_RESULTSET db_get_resultset (const DB_VALUE * value);
+  extern DB_RESULTSET db_get_resultset (const DB_VALUE * value);
 
-extern int db_string_put_cs_and_collation (DB_VALUE * value, const int codeset, const int collation_id);
-extern int db_enum_put_cs_and_collation (DB_VALUE * value, const int codeset, const int collation_id);
-extern int db_get_string_codeset (const DB_VALUE * value);
-extern int db_get_string_collation (const DB_VALUE * value);
+  extern int db_string_put_cs_and_collation (DB_VALUE * value, const int codeset, const int collation_id);
+  extern int db_get_string_codeset (const DB_VALUE * value);
+  extern int db_get_string_collation (const DB_VALUE * value);
+
+  extern int db_enum_put_cs_and_collation (DB_VALUE * value, const int codeset, const int collation_id);
+  extern int db_get_enum_codeset (const DB_VALUE * value);
+  extern int db_get_enum_collation (const DB_VALUE * value);
+
+#ifdef __cplusplus
+}
+#endif				/* __cplusplus */
+
 extern int valcnv_convert_value_to_string (DB_VALUE * value);
 
-extern int db_get_enum_codeset (const DB_VALUE * value);
-extern int db_get_enum_collation (const DB_VALUE * value);
+STATIC_INLINE int db_get_compressed_size (DB_VALUE * value) __attribute__ ((ALWAYS_INLINE));
+STATIC_INLINE void db_set_compressed_string (DB_VALUE * value, char *compressed_string,
+					     int compressed_size, bool compressed_need_clear)
+  __attribute__ ((ALWAYS_INLINE));
 
-extern int db_get_compressed_size (DB_VALUE * value);
-extern void db_set_compressed_string (DB_VALUE * value, char *compressed_string,
-				      int compressed_size, bool compressed_need_clear);
+int
+db_get_compressed_size (DB_VALUE * value)
+{
+  DB_TYPE type;
+
+  if (value == NULL || DB_IS_NULL (value))
+    {
+      return 0;
+    }
+
+  type = DB_VALUE_DOMAIN_TYPE (value);
+
+  /* Preliminary check */
+  assert (type == DB_TYPE_VARCHAR || type == DB_TYPE_VARNCHAR);
+
+  return value->data.ch.medium.compressed_size;
+}
+
+/*
+ *  db_set_compressed_string() - Sets the compressed string, its size and its need for clear in the DB_VALUE
+ *
+ *  value(in/out)             : The DB_VALUE
+ *  compressed_string(in)     :
+ *  compressed_size(in)       :
+ *  compressed_need_clear(in) :
+ */
+STATIC_INLINE void
+db_set_compressed_string (DB_VALUE * value, char *compressed_string, int compressed_size, bool compressed_need_clear)
+{
+  DB_TYPE type;
+
+  if (value == NULL || DB_IS_NULL (value))
+    {
+      return;
+    }
+  type = DB_VALUE_DOMAIN_TYPE (value);
+
+  /* Preliminary check */
+  assert (type == DB_TYPE_VARCHAR || type == DB_TYPE_VARNCHAR);
+
+  value->data.ch.medium.compressed_buf = compressed_string;
+  value->data.ch.medium.compressed_size = compressed_size;
+  value->data.ch.info.compressed_need_clear = compressed_need_clear;
+
+  return;
+}
 
 #endif /* _DBTYPE_H_ */
