@@ -16,7 +16,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 
-message(WARNING "Flex loader outputs: ${FLEX_loader_lexer_OUTPUTS}")
+message("  Flex loader outputs: ${FLEX_loader_lexer_OUTPUTS}")
 
 set(EXECUTABLE_SOURCES
   ${BISON_loader_grammar_OUTPUTS}
