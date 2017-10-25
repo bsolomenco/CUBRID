@@ -844,7 +844,7 @@ if(WITH_LIBLZO MATCHES "^BUNDLED")
   string(SUBSTRING "${WITH_LIBLZO}" 7 -1 LZO_PATH)
   
   if(LZO_PATH STREQUAL "")
-    set(LZO_PATH "lzo-2.03")
+    set(LZO_PATH "lzo-2.10")
   endif()
   
   if(UNIX)
