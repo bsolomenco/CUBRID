@@ -23,20 +23,20 @@
 
 #ident "$Id$"
 
-#include <stdio.h>
-#include <stdarg.h>
-#ifdef HAVE_GETOPT_H
-#include <getopt.h>
-#else
-#include "getopt.h"
-#endif
-
 #include "csql.h"
 #include "message_catalog.h"
 #include "environment_variable.h"
 #include "intl_support.h"
 #include "utility.h"
 #include "util_support.h"
+#ifdef HAVE_GETOPT_H
+#include <getopt.h>
+#else
+#include "getopt.h"
+#endif
+
+#include <stdio.h>
+#include <stdarg.h>
 
 typedef const char *(*CSQL_GET_MESSAGE) (int message_index);
 typedef int (*CSQL) (const char *argv0, CSQL_ARGUMENT * csql_arg);

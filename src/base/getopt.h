@@ -63,8 +63,9 @@ struct option
 extern "C"
 {
 #endif
-
+#ifndef HAVE_GETOPT_H //only when <getopt.h> not found, otherwise could cause conflicts
   int getopt (int, char *const *, const char *);
+#endif
   int getopt_long (int, char *const *, const char *, const struct option *, int *);
 
 /* On some platforms, this is in libc, but not in a system header */
