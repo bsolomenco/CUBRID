@@ -15,6 +15,13 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
+message("======== util/CMakeLists.txt")
+if(FF_GETOPT_H)
+  message("    ---- getopt.h: SYSTEM_GETOPT = " ${FF_GETOPT_H})
+else()
+  message("    ---- getopt.h: local")
+endif()
+
 
 set(LIBCUBRIDESQL_SOURCES
   ${EXECUTABLES_DIR}/esql_gadget.c
@@ -43,8 +50,8 @@ add_dependencies(cubridesql cubridcs)
 set(CSQL_SOURCES
   ${EXECUTABLES_DIR}/csql_launcher.c
   ${EXECUTABLES_DIR}/util_support.c
-  ${BASE_DIR}/porting.c
   ${BASE_DIR}/getopt_long.c
+  ${BASE_DIR}/porting.c
   )
 
 SET_SOURCE_FILES_PROPERTIES(

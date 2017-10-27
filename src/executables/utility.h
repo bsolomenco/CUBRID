@@ -26,10 +26,11 @@
 #ifndef _UTILITY_H_
 #define _UTILITY_H_
 
-#include <config.h>
-#include <stdio.h>
+#include "config.h"
+#include "getopt.h"
 #include "util_func.h"
 #include "dynamic_array.h"
+#include <stdio.h>
 
 /*
  * UTILITY MESSAGE SETS
@@ -753,7 +754,6 @@ typedef enum
   ARG_BIGINT
 } UTIL_ARG_TYPE;
 
-typedef struct option GETOPT_LONG;
 
 typedef struct
 {

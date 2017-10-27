@@ -27,8 +27,23 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef ___GETOPT_H___
-#define ___GETOPT_H___
+#pragma once
+
+#if defined(SYSTEM_GETOPT)//getopt.h: system
+#pragma message("========== <getopt.h>: system")
+#include <unistd.h> //for getopt()
+#include <getopt.h> //for getopt_long()
+
+//this is exactly the content of uns/include/getopt.h... why I have to include it manually??? maybe it finds another header somewhere else?
+#include <features.h>
+#ifndef __getopt_argv_const
+# define __getopt_argv_const const
+#endif
+#include <bits/getopt_core.h>
+#include <bits/getopt_ext.h>
+
+#else //use fallback getopt() & getopt_long()
+#pragma message("========== \"getopt.h\": local")
 
 #if !defined(WINDOWS)
 #include <sys/cdefs.h>
@@ -63,9 +78,8 @@ struct option
 extern "C"
 {
 #endif
-#ifndef HAVE_GETOPT_H //only when <getopt.h> not found, otherwise could cause conflicts
+
   int getopt (int, char *const *, const char *);
-#endif
   int getopt_long (int, char *const *, const char *, const struct option *, int *);
 
 /* On some platforms, this is in libc, but not in a system header */
@@ -79,4 +93,6 @@ extern "C"
 }
 #endif
 
-#endif				/* !_GETOPT_H_ */
+#endif //defined(SYSTEM_GETOPT)
+
+typedef struct option GETOPT_LONG;

@@ -32,11 +32,7 @@
 #if !defined(WINDOWS)
 #include <unistd.h>
 #endif
-#ifdef HAVE_GETOPT_H
-#include <getopt.h>
-#else
 #include "getopt.h"
-#endif
 
 #ifdef MT_MODE
 #include <pthread.h>

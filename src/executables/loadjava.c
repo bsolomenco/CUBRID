@@ -30,11 +30,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
-#ifdef HAVA_GETOPT_H
-#include <getopt.h>
-#else
 #include "getopt.h"
-#endif
 
 #include "error_code.h"
 #include "message_catalog.h"

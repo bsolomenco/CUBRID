@@ -27,10 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <assert.h>
-#include "config.h"
-
-#ifndef HAVE_GETOPT_LONG
+#if !defined(SYSTEM_GETOPT)
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -497,4 +494,4 @@ getopt_long (int nargc, char *const * nargv, const char *options, const struct o
     }
   return retval;
 }
-#endif /* !HAVE_GETOPT_LONG */
+#endif //!defined(SYSTEM_GETOPT)

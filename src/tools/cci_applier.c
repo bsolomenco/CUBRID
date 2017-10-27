@@ -10,7 +10,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include <libgen.h>
-#include <getopt.h>
+#include "getopt.h"
 #include "cas_cci.h"
 #include "cci_applier.h"
 #include "log_applier.h"

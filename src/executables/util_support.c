@@ -24,13 +24,13 @@
 #ident "$Id$"
 
 #include "config.h"
+#include "getopt.h"
 
 #include <stdio.h>
 #include <string.h>
-#include <getopt.h>
 #include <errno.h>
 #if !defined(WINDOWS)
-#include <unistd.h>
+//#include <unistd.h>
 #include <dlfcn.h>
 #endif
 #include "error_code.h"

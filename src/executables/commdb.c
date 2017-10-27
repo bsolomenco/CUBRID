@@ -30,11 +30,7 @@
 #include <string.h>
 #include <signal.h>
 #include <assert.h>
-#ifdef HAVE_GETOPT_H
-#include <getopt.h>
-#else
 #include "getopt.h"
-#endif
 
 #if defined(WINDOWS)
 #include <winsock2.h>

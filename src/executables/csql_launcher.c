@@ -23,17 +23,26 @@
 
 #ident "$Id$"
 
+//#include "config.h"
+#if defined(GETOPT_H)//use system <getopt.h>
+#pragma message("========== <getopt.h>: system")
+#else //use local "getopt.h"
+#pragma message("========== \"getopt.h\": local")
+#endif
+#if defined(HAVE_GETOPT_LONG)// getopt_long(): system
+#pragma message("========== getopt_long(): system")
+#else // getopt_long(): local
+#pragma message("========== getopt_long(): local")
+#endif
+
+
 #include "csql.h"
 #include "message_catalog.h"
 #include "environment_variable.h"
 #include "intl_support.h"
 #include "utility.h"
 #include "util_support.h"
-#ifdef HAVE_GETOPT_H
-#include <getopt.h>
-#else
 #include "getopt.h"
-#endif
 
 #include <stdio.h>
 #include <stdarg.h>

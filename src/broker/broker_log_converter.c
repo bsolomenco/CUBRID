@@ -30,11 +30,7 @@
 #if !defined(WINDOWS)
 #include <unistd.h>
 #endif
-#ifdef HAVE_GETOPT_H
-#include <getopt.h>
-#else
 #include "getopt.h"
-#endif
 
 #include "cas_common.h"
 #include "cas_cci.h"

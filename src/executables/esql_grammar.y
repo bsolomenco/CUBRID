@@ -298,12 +298,7 @@ extern int esql_yylineno;
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
-
-#ifdef HAVE_GETOPT_H
-#include <getopt.h>
-#else
 #include "getopt.h"
-#endif
 
 #include "language_support.h"
 #include "message_catalog.h"

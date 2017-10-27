@@ -26,11 +26,7 @@
 #include <string.h>
 
 #include "config.h"
-#ifdef HAVE_GETOPT_H
-#include <getopt.h>
-#else
 #include "getopt.h"
-#endif
 #include "utility.h"
 #include "error_code.h"
 #include "util_support.h"

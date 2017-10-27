@@ -39,11 +39,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #endif
-#ifdef HAVE_GETOPT_H
-#include <getopt.h>
-#else
 #include "getopt.h"
-#endif
 
 #include "cas_common.h"
 #include "porting.h"

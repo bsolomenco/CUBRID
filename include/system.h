@@ -77,11 +77,7 @@
 #ifdef HAVE_REGEX_H
 # include <regex.h>
 #endif
-#ifdef HAVE_GETOPT_H
-# include <getopt.h>
-#else
 # include "getopt.h"
-#endif
 #ifdef HAVE_LIBGEN_H
 # include <libgen.h>
 #endif

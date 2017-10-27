@@ -98,11 +98,7 @@ up-to-date.  Many thanks.
 #if !defined(WINDOWS)
 #include <unistd.h>
 #endif
-#ifdef HAVE_GETOPT_H
-#include <getopt.h>
-#else
 #include "getopt.h"
-#endif
 
 #if defined(WINDOWS)
 #include <io.h>

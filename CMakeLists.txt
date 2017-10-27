@@ -15,6 +15,7 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
+message("======== CMakeLists.txt")
 
 cmake_minimum_required(VERSION 2.8)
 
@@ -372,6 +373,14 @@ set(TOOLS_DIR                ${CMAKE_SOURCE_DIR}/src/tools)
 set(TRANSACTION_DIR          ${CMAKE_SOURCE_DIR}/src/transaction)
 set(WIN_TOOLS_DIR            ${CMAKE_SOURCE_DIR}/src/win_tools)
 
+find_file(FF_UNISTD_H unistd.h) #for getopt()
+message("    ---- getopt(): FF_UNISTD_H = " ${FF_UNISTD_H})
+find_file(FF_GETOPT_H getopt.h) #for getopt_long()
+message("    ---- getopt_long(): FF_GETOPT_H = " ${FF_GETOPT_H})
+if(FF_GETOPT_H)
+  message("    ---- #define SYSTEM_GETOPT " ${FF_GETOPT_H})
+  add_definitions(-DSYSTEM_GETOPT=${FF_GETOPT_H})
+endif()
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(

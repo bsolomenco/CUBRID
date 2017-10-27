@@ -32,11 +32,7 @@
 #else /* WINDOWS */
 #include <unistd.h>
 #endif /* !WINDOWS */
-#ifdef HAVE_GETOPT_H
-#include <getopt.h>
-#else
 #include "getopt.h"
-#endif
 #include <assert.h>
 
 #include "cas_common.h"
