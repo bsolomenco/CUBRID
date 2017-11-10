@@ -1,5 +1,5 @@
 @set dt0=%DATE% %TIME%
-@title cubrid (bsolomenco/default) : b : %dt0% ...
+@title %cd% : %~n0%~x0 : %dt0% ...
 @echo %dt0%
 pushd ..\build
 cmake --build .
@@ -8,4 +8,4 @@ popd
 @echo ----==== dt1-dt0 ====----
 @echo %dt0%
 @echo %dt1%
-@title cubrid (bsolomenco/default) : b : %dt0% ... %dt1%
+@title %cd% : %~n0%~x0 : %dt0% ... %dt1%
