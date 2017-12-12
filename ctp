@@ -5,7 +5,7 @@ fi
 dt0=$(date +"%Y-%m-%d %H:%M:%S")
 echo $dt0
 pushd ~/cubrid/testtools/CTP
-cmd="bin/ctp.sh sql -c ./conf/$1.conf >ctp.txt"
+cmd="bin/ctp.sh sql -c ./conf/$1.conf"
 echo $cmd; $cmd
 popd
 dt1=$(date +"%Y-%m-%d %H:%M:%S")
