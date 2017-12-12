@@ -1,11 +1,11 @@
 if [ $# -lt 1 ]; then
-    echo "SYNTAX: ctp sql , ctp medium"
+    echo "SYNTAX: ctp [sql | medium | isolation]"
     exit -1
 fi
 dt0=$(date +"%Y-%m-%d %H:%M:%S")
 echo $dt0
-pushd ../testtools/CTP
-cmd="bin/ctp.sh sql -c ./conf/$1.conf >ctp.txt 2>&1"
+pushd ~/cubrid/testtools/CTP
+cmd="bin/ctp.sh sql -c ./conf/$1.conf >ctp.txt"
 echo $cmd; $cmd
 popd
 dt1=$(date +"%Y-%m-%d %H:%M:%S")
