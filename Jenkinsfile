@@ -1,5 +1,10 @@
 pipeline {
   agent none
+
+  triggers {
+    pollSCM('H 1 * * *')
+  }
+
   stages {
     stage('Build and Test') {
       parallel {
@@ -10,11 +15,9 @@ pipeline {
               label 'linux'
               alwaysPull true
             }
-            
           }
           environment {
             MAKEFLAGS = '-j'
-            TEST_SUITE = 'medium:sql'
             TEST_REPORT = 'reports'
           }
           steps {
@@ -45,31 +48,7 @@ pipeline {
             }
           }
         }
-        stage('Windows Release') {
-          agent {
-            node {
-              label 'windows'
-            }
-            
-          }
-          steps {
-            echo 'Checking out...'
-            dir(path: 'cubridmanager') {
-              git 'https://github.com/CUBRID/cubrid-manager-server'
-            }
-            
-            echo 'Building...'
-            dir(path: 'packages') {
-              deleteDir()
-            }
-	    bat 'win/build.bat /out packages'
-          }
-          post {
-            always {
-              archiveArtifacts 'packages/*'
-            }
-          }
-        }
+
         stage('Linux Debug') {
           agent {
             docker {
@@ -77,11 +56,9 @@ pipeline {
               label 'linux'
               alwaysPull true
             }
-            
           }
           environment {
             MAKEFLAGS = '-j'
-            TEST_SUITE = 'medium:sql'
             TEST_REPORT = 'reports'
           }
           steps {
@@ -112,9 +89,35 @@ pipeline {
             }
           }
         }
+
+        stage('Windows Release') {
+          agent {
+            node {
+              label 'windows'
+            }
+          }
+          steps {
+            echo 'Checking out...'
+            dir(path: 'cubridmanager') {
+              git 'https://github.com/CUBRID/cubrid-manager-server'
+            }
+            
+            echo 'Building...'
+            dir(path: 'packages') {
+              deleteDir()
+            }
+	    bat 'win/build.bat /out packages'
+          }
+          post {
+            always {
+              archiveArtifacts 'packages/*'
+            }
+          }
+        }
       }
     }
   }
+
   post {
     always {
       build job: "${DEPLOY_JOB}", parameters: [string(name: 'PROJECT_NAME', value: "$JOB_NAME")],
