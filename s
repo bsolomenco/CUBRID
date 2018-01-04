@@ -8,7 +8,7 @@ helpFunc () {
     printf "    %-10s %s\n" "cloneCub"  "clone CUBRID ==> \"$scriptDir/repo\""
     printf "    %-10s %s\n" "genCub"    "generate cubrid ==> \"$scriptDir/build\""
     printf "    %-10s %s\n" "buildCub"  "build cubrid"
-    printf "    %-10s %s\n" "instCub"   "install cubrid ==> \"$scriptDir/inst\""
+    printf "    %-10s %s\n" "instCub"   "install cubrid ==> \"$scriptDir/inst\" (backup conf/*.conf before and restore after)"
     printf "    %-10s %s\n" "genDb"     "generate testdb ==> \"$scriptDir/db\""
     printf "    %-10s %s\n" "cloneTst"  "clone test tools and cases:"
     printf "    %-10s %s\n" "    cubrid-testtools             ==> \"$scriptDir/tt\""
@@ -70,7 +70,7 @@ buildCubFunc () {
 
 #================================================================
 instCubFunc () {
-    print "DBG backup configuration files...\n"
+    printf "DBG backup configuration files...\n"
     chkCmd "cp $CUBRID/conf/cubrid.conf            $CUBRID/conf/cubrid.conf.bak"
     chkCmd "cp $CUBRID/conf/cubrid_broker.conf     $CUBRID/conf/cubrid_broker.conf.bak"
     chkCmd "cp $CUBRID/conf/cubrid_ha.conf         $CUBRID/conf/cubrid_ha.conf.bak"
@@ -79,7 +79,7 @@ instCubFunc () {
     chkCmd "cmake --build . --target install"
     chkCmd "popd"
 
-    print "DBG restore configuration files...\n"
+    printf "DBG restore configuration files...\n"
     chkCmd "mv $CUBRID/conf/cubrid.conf.bak        $CUBRID/conf/cubrid.conf"
     chkCmd "mv $CUBRID/conf/cubrid_broker.conf.bak $CUBRID/conf/cubrid_broker.conf"
     chkCmd "mv $CUBRID/conf/cubrid_ha.conf.bak     $CUBRID/conf/cubrid_ha.conf"
