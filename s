@@ -70,9 +70,19 @@ buildCubFunc () {
 
 #================================================================
 instCubFunc () {
+    print "DBG backup configuration files...\n"
+    chkCmd "cp $CUBRID/conf/cubrid.conf            $CUBRID/conf/cubrid.conf.bak"
+    chkCmd "cp $CUBRID/conf/cubrid_broker.conf     $CUBRID/conf/cubrid_broker.conf.bak"
+    chkCmd "cp $CUBRID/conf/cubrid_ha.conf         $CUBRID/conf/cubrid_ha.conf.bak"
+
     chkCmd "pushd $scriptDir/build"
     chkCmd "cmake --build . --target install"
     chkCmd "popd"
+
+    print "DBG restore configuration files...\n"
+    chkCmd "mv $CUBRID/conf/cubrid.conf.bak        $CUBRID/conf/cubrid.conf"
+    chkCmd "mv $CUBRID/conf/cubrid_broker.conf.bak $CUBRID/conf/cubrid_broker.conf"
+    chkCmd "mv $CUBRID/conf/cubrid_ha.conf.bak     $CUBRID/conf/cubrid_ha.conf"
 }
 
 #================================================================
