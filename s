@@ -10,7 +10,11 @@ helpFunc () {
     printf "    %-10s %s\n" "buildCub"  "build cubrid"
     printf "    %-10s %s\n" "instCub"   "install cubrid ==> \"$scriptDir/inst\""
     printf "    %-10s %s\n" "genDb"     "generate testdb ==> \"$scriptDir/db\""
-    printf "    %-10s %s\n" "cloneTst"  "clone testtools and testcases ==> \"$scriptDir/tt\" and \"$scriptDir/tc\""
+    printf "    %-10s %s\n" "cloneTst"  "clone test tools and cases:"
+    printf "    %-10s %s\n" "    cubrid-testtools             ==> \"$scriptDir/tt\""
+    printf "    %-10s %s\n" "    cubrid-testtools-internal    ==> \"$scriptDir/tt-internal\""
+    printf "    %-10s %s\n" "    cubrid-testtestcases         ==> \"$scriptDir/tc\""
+    printf "    %-10s %s\n" "    cubrid-testtestcases-private ==> \"$scriptDir/tc-private\""
     printf "    %-10s %s\n" "vg"        "valgrind ..."
 }
 
@@ -91,8 +95,12 @@ genDbFunc () {
 cloneTstFunc () {
     runCmd "rm -rf $scriptDir/tt"
     chkCmd "git clone https://github.com/CUBRID/cubrid-testtools $scriptDir/tt"
+    runCmd "rm -rf $scriptDir/tt-internal"
+    chkCmd "git clone https://github.com/CUBRID/cubrid-testtools-internal $scriptDir/tt-internal"
     runCmd "rm -rf $scriptDir/tc"
     chkCmd "git clone https://github.com/CUBRID/cubrid-testcases $scriptDir/tc"
+    runCmd "rm -rf $scriptDir/tc-private"
+    chkCmd "git clone https://github.com/CUBRID/cubrid-testcases $scriptDir/tc-private"
 }
 
 #================================================================
