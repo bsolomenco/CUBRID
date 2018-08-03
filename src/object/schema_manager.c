@@ -6398,6 +6398,7 @@ sm_virtual_queries (PARSER_CONTEXT * parser, DB_OBJECT * class_object)
 
   cache = cl->virtual_query_cache;
 
+  printf("[sm_virtual_queries()] END cache=%p\n", cache);
   return cache;
 }
 

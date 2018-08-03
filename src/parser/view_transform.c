@@ -5066,6 +5066,7 @@ mq_fetch_subqueries (PARSER_CONTEXT * parser, PT_NODE * class_)
     }
 
   query_cache = sm_virtual_queries (parser, class_object);
+  printf("[mq_fetch_subqueries()] sm_virtual_queries() -> %p\n", query_cache);
 
   if (query_cache && query_cache->view_cache)
     {
@@ -5073,6 +5074,7 @@ mq_fetch_subqueries (PARSER_CONTEXT * parser, PT_NODE * class_)
 	{
 	  PT_ERRORmf (parser, class_, MSGCAT_SET_PARSER_RUNTIME, MSGCAT_RUNTIME_SEL_NOT_AUTHORIZED,
 		      db_get_class_name (class_->info.name.db_object));
+          printf("[mq_fetch_subqueries()] query_cache=%p LOST1\n", query_cache);
 	  return NULL;
 	}
 
@@ -5081,9 +5083,11 @@ mq_fetch_subqueries (PARSER_CONTEXT * parser, PT_NODE * class_)
 	  mq_copy_view_error_msgs (parser, query_cache);
 	}
 
+      printf("[mq_fetch_subqueries()] query_cache=%p LOST2\n", query_cache);
       return query_cache->view_cache->vquery_for_query_in_gdb;
     }
 
+  printf("[mq_fetch_subqueries()] query_cache=%p LOST3\n", query_cache);
   return NULL;
 }
 
@@ -5904,6 +5908,7 @@ mq_virtual_queries (DB_OBJECT * class_object)
       top_cycle = 0;
     }
 
+  printf("[mq_virtual_queries()] END parser=%p\n", parser);
   return parser;
 }
 
