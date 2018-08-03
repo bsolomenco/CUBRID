@@ -2090,6 +2090,8 @@ pt_frob_warning (PARSER_CONTEXT * parser, const PT_NODE * stmt, const char *fmt,
  *   helper function for PT_ERROR macro
  */
 
+#include <thread>
+
 void
 pt_frob_error (PARSER_CONTEXT * parser, const PT_NODE * stmt, const char *fmt, ...)
 {
@@ -2109,12 +2111,12 @@ pt_frob_error (PARSER_CONTEXT * parser, const PT_NODE * stmt, const char *fmt, .
       free (old_buf);
     }
 #else
+  printf("%016X parser->error_buffer (%p->%p) before free() [pt_frob_error()]\n", std::this_thread::get_id(), parser, parser->error_buffer);
   free (parser->error_buffer);
   parser->error_buffer = NULL;
   va_start (ap, fmt);
-  printf("parser->error_buffer (%p->%p) before vasprintf() [pt_frob_error()]\n", parser, parser->error_buffer);
-  vasprintf (&parser->error_buffer, fmt, ap);
-  printf("parser->error_buffer (%p->%p) after  vasprintf() [pt_frob_error()]\n", parser, parser->error_buffer);
+  int i = vasprintf (&parser->error_buffer, fmt, ap);
+  printf("%016X parser->error_buffer (%p->%p) after  vasprintf()=%d [pt_frob_error()]\n", std::this_thread::get_id(), parser, parser->error_buffer, i);
   va_end (ap);
 #endif
 

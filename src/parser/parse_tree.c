@@ -1232,11 +1232,8 @@ parser_free_parser (PARSER_CONTEXT * parser)
   pt_free_node_blocks (parser);
   pt_unregister_parser (parser);
 
-  if (parser->error_buffer)
-    {
-      printf("parser->error_buffer (%p->%p) [parser_free_parser()]\n", parser, parser->error_buffer);
-      free ((char *) parser->error_buffer);
-    }
+  printf("free(parser->error_buffer (%p->%p)) [parser_free_parser()]\n", parser, parser->error_buffer);
+  free (parser->error_buffer);
 
   if (parser->host_variables)
     {
