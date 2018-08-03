@@ -1493,6 +1493,7 @@ check_server_alive (const char *db_name, const char *db_host)
 static void
 cas_sig_handler (int signo)
 {
+  printf("[cas_sig_handler] signo=%d\n", signo);
   signal (signo, SIG_IGN);
   cas_free (true);
   as_info->pid = 0;
