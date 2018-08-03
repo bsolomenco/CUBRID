@@ -194,6 +194,7 @@ ut_kill_process (int pid)
 int
 ut_kill_process (int pid)
 {
+  printf("[ut_kill_process] pid=%d\n", pid)
   int i;
 
   if (pid > 0)
