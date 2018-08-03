@@ -1234,6 +1234,7 @@ parser_free_parser (PARSER_CONTEXT * parser)
 
   if (parser->error_buffer)
     {
+      printf("parser->error_buffer (%p->%p) before vasprintf() [parser_free_parser()]\n", parser, parser->error_buffer);
       free ((char *) parser->error_buffer);
     }
 
