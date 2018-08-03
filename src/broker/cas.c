@@ -1503,6 +1503,7 @@ cas_sig_handler (int signo)
 static void
 cas_final (void)
 {
+  printf("[cas_final()]\n");
   signal (SIGTERM, SIG_IGN);
   signal (SIGINT, SIG_IGN);
   cas_free (false);
@@ -1519,6 +1520,8 @@ cas_free (bool from_sighandler)
   int fd;
 #endif
   int max_process_size;
+
+  printf("[cas_free(%d)]\n", from_sighandler);
 
   if (from_sighandler)
     {
