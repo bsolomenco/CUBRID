@@ -2095,6 +2095,7 @@ pt_frob_error (PARSER_CONTEXT * parser, const PT_NODE * stmt, const char *fmt, .
 {
   va_list ap;
   const char *context = NULL;
+#if 0
   char *old_buf = parser->error_buffer;
 
   va_start (ap, fmt);
@@ -2107,6 +2108,15 @@ pt_frob_error (PARSER_CONTEXT * parser, const PT_NODE * stmt, const char *fmt, .
     {
       free (old_buf);
     }
+#else
+  free (parser->error_buffer);
+  parser->error_buffer = NULL;
+  va_start (ap, fmt);
+  printf("parser->error_buffer (%p->%p) before vasprintf() [pt_frob_error()]\n", parser, parser->error_buffer);
+  vasprintf (&parser->error_buffer, fmt, ap);
+  printf("parser->error_buffer (%p->%p) after  vasprintf() [pt_frob_error()]\n", parser, parser->error_buffer);
+  va_end (ap);
+#endif
 
   if (parser->original_buffer != NULL && stmt != NULL && stmt->buffer_pos != -1)
     {
