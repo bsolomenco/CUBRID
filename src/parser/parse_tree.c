@@ -1234,8 +1234,9 @@ parser_free_parser (PARSER_CONTEXT * parser)
 
   if(parser->error_buffer){
     printf("[parser_free_parser()] free(parser->error_buffer (%p->%p)) %s\n", parser, parser->error_buffer, parser->error_buffer);
+    free (parser->error_buffer);
+    parser->error_buffer = NULL;
   }
-  free (parser->error_buffer);
 
   if (parser->host_variables)
     {
