@@ -1226,6 +1226,8 @@ parser_free_parser (PARSER_CONTEXT * parser)
 
   assert (parser != NULL);
 
+  printf("[parser_free_parser()] parser=%p\n", parser);
+
   /* free string blocks */
   pt_free_string_blocks (parser);
   /* free node blocks */

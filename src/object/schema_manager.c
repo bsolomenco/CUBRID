@@ -6364,6 +6364,7 @@ sm_virtual_queries (PARSER_CONTEXT * parser, DB_OBJECT * class_object)
        * again.  We need to keep the old one and free the new one because the parser assigned originally contains the
        * error message. */
       tmp = mq_virtual_queries (class_object);
+      printf("[sm_virtual_queries()] mq_virtual_queries() -> %p\n", tmp);
       if (tmp == NULL)
 	{
 	  if (old_cache)
