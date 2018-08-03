@@ -1233,7 +1233,7 @@ parser_free_parser (PARSER_CONTEXT * parser)
   pt_unregister_parser (parser);
 
   if(parser->error_buffer){
-    printf("free(parser->error_buffer (%p->%p)) [parser_free_parser()]\n", parser, parser->error_buffer);
+    printf("[parser_free_parser()] free(parser->error_buffer (%p->%p)) %s\n", parser, parser->error_buffer, parser->error_buffer);
   }
   free (parser->error_buffer);
 

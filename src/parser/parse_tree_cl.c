@@ -2066,15 +2066,14 @@ void
 pt_frob_warning (PARSER_CONTEXT * parser, const PT_NODE * stmt, const char *fmt, ...)
 {
   va_list ap;
-
   if ( parser->error_buffer ){
-    printf("%016X free(parser->error_buffer (%p->%p)) [pt_frob_warning()]\n", std::this_thread::get_id(), parser, parser->error_buffer);
+    printf("[%016X pt_frob_warning()] free(parser->error_buffer (%p->%p)) %s \n", std::this_thread::get_id(), parser, parser->error_buffer, parser->error_buffer);
     free (parser->error_buffer);
     parser->error_buffer = NULL;
   }
   va_start (ap, fmt);
   int i = vasprintf (&parser->error_buffer, fmt, ap);
-  printf("%016X parser->error_buffer (%p->%p) after vasprintf()=%d [pt_frob_warning()]\n", std::this_thread::get_id(), parser, parser->error_buffer, i);
+  printf("[%016X pt_frob_warning()] vasprintf()=%d parser->error_buffer (%p->%p) %s\n", std::this_thread::get_id(), i, parser, parser->error_buffer, parser->error_buffer);
   va_end (ap);
 
   pt_record_warning (parser, parser->statement_number, SAFENUM (stmt, line_number), SAFENUM (stmt, column_number),
@@ -2096,32 +2095,17 @@ void
 pt_frob_error (PARSER_CONTEXT * parser, const PT_NODE * stmt, const char *fmt, ...)
 {
   va_list ap;
-  const char *context = NULL;
-#if 0
-  char *old_buf = parser->error_buffer;
-
-  va_start (ap, fmt);
-  printf("parser->error_buffer (%p->%p) before vasprintf() [pt_frob_error()]\n", parser, parser->error_buffer);
-  vasprintf (&parser->error_buffer, fmt, ap);
-  printf("parser->error_buffer (%p->%p) after  vasprintf() [pt_frob_error()]\n", parser, parser->error_buffer);
-  va_end (ap);
-
-  if (old_buf && parser->error_buffer != old_buf)
-    {
-      free (old_buf);
-    }
-#else
   if ( parser->error_buffer ){
-    printf("%016X free(parser->error_buffer (%p->%p)) [pt_frob_warning()]\n", std::this_thread::get_id(), parser, parser->error_buffer);
+    printf("[%016X pt_frob_error()] free(parser->error_buffer (%p->%p)) %s \n", std::this_thread::get_id(), parser, parser->error_buffer, parser->error_buffer);
     free (parser->error_buffer);
     parser->error_buffer = NULL;
   }
   va_start (ap, fmt);
   int i = vasprintf (&parser->error_buffer, fmt, ap);
-  printf("%016X parser->error_buffer (%p->%p) after vasprintf()=%d [pt_frob_error()]\n", std::this_thread::get_id(), parser, parser->error_buffer, i);
+  printf("[%016X pt_frob_error()] vasprintf()=%d parser->error_buffer (%p->%p) %s\n", std::this_thread::get_id(), i, parser, parser->error_buffer, parser->error_buffer);
   va_end (ap);
-#endif
 
+  const char *context = NULL;
   if (parser->original_buffer != NULL && stmt != NULL && stmt->buffer_pos != -1)
     {
       if (strlen (parser->original_buffer) <= stmt->buffer_pos)
