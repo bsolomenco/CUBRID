@@ -5757,6 +5757,7 @@ void
 mq_free_virtual_query_cache (PARSER_CONTEXT * parser)
 {
   VIEW_CACHE_INFO *info;
+  printf("[mq_free_virtual_query_cache()]\n");
 
   /* symbols is used to hold the virtual query cache */
   info = (VIEW_CACHE_INFO *) parser->view_cache;
