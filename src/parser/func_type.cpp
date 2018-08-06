@@ -655,6 +655,9 @@ const func_signature* Func::Node::get_signature(const std::vector<func_signature
             //... accumulate error messages
             if (!matchEquivalent && !matchCastable) //current arg doesn' match => current signature doesn't match
             {
+                //er_set(ER_NOTIFICATION_SEVERITY, __FILE__, __LINE__, );
+                printf("[%s()] statement: %s%s\n", __func__, m_node->sql_user_text);
+
                 sb.clear();
                 pt_cat_error(m_parser,
                 arg,
