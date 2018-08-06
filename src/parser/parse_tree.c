@@ -1159,7 +1159,7 @@ parser_create_parser (void)
   struct drand48_data rand_buf;
 
   parser = (PARSER_CONTEXT *) calloc (sizeof (PARSER_CONTEXT), 1);
-  printf("[parser_create_parser()] -> %p%p)\n", parser);
+  printf("[parser_create_parser()] -> %p\n", parser);
   if (parser == NULL)
     {
       er_set (ER_ERROR_SEVERITY, ARG_FILE_LINE, ER_OUT_OF_VIRTUAL_MEMORY, 1, sizeof (PARSER_CONTEXT));

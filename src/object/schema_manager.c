@@ -6371,6 +6371,10 @@ sm_virtual_queries (PARSER_CONTEXT * parser, DB_OBJECT * class_object)
 	{
 	  if (old_cache)
 	    {
+              if( cl->virtual_query_cache )
+                {
+                  mq_free_virtual_query_cache(cl->virtual_query_cache);
+                }
 	      cl->virtual_query_cache = old_cache;
 	    }
 	  return NULL;
