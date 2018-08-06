@@ -2096,13 +2096,13 @@ pt_frob_error (PARSER_CONTEXT * parser, const PT_NODE * stmt, const char *fmt, .
 {
   va_list ap;
   if ( parser->error_buffer ){
-    printf("[%016X pt_frob_error()] free(parser->error_buffer (%p->%p)) %s \n", std::this_thread::get_id(), parser, parser->error_buffer, parser->error_buffer);
+    printf("[pt_frob_error()] free(parser->error_buffer (%p->%p)) %s \n", parser, parser->error_buffer, parser->error_buffer);
     free (parser->error_buffer);
     parser->error_buffer = NULL;
   }
   va_start (ap, fmt);
   int i = vasprintf (&parser->error_buffer, fmt, ap);
-  printf("[%016X pt_frob_error()] vasprintf()=%d parser->error_buffer (%p->%p) %s\n", std::this_thread::get_id(), i, parser, parser->error_buffer, parser->error_buffer);
+  printf("[pt_frob_error()] vasprintf()=%d parser->error_buffer (%p->%p) %s\n", i, parser, parser->error_buffer, parser->error_buffer);
   va_end (ap);
 
   const char *context = NULL;
