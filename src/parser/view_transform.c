@@ -5089,8 +5089,8 @@ mq_fetch_subqueries (PARSER_CONTEXT * parser, PT_NODE * class_)
     }
 
   printf("[mq_fetch_subqueries()] query_cache=%p LOST ???\n", query_cache);
-#if 0
-  if(query_cache->error_buffer)
+#if 1
+  if(0)//if(query_cache->error_buffer)
     {
       printf("[mq_fetch_subqueries()] free(query_cache->error_buffer %p->%p)\n", query_cache, query_cache->error_buffer);
       free(query_cache->error_buffer);
