@@ -5089,14 +5089,18 @@ mq_fetch_subqueries (PARSER_CONTEXT * parser, PT_NODE * class_)
     }
 
   printf("[mq_fetch_subqueries()] query_cache=%p LOST ???\n", query_cache);
+#if 0
   if(query_cache->error_buffer)
     {
       printf("[mq_fetch_subqueries()] free(query_cache->error_buffer %p->%p)\n", query_cache, query_cache->error_buffer);
       free(query_cache->error_buffer);
       query_cache->error_buffer = NULL;
     }
-  //query_cache->view_cache->vquery_for_query_in_gdb = NULL; //give up ownership
-  //mq_free_virtual_query_cache(query_cache); //this will free also the parser by calling parser_free_parser()
+#else
+  printf("[mq_fetch_subqueries()] mq_free_virtual_query_cache(query_cache %p)\n", query_cache);
+  query_cache->view_cache->vquery_for_query_in_gdb = NULL; //give up ownership
+  mq_free_virtual_query_cache(query_cache); //this will free also the parser by calling parser_free_parser()
+#endif
   return node;
 }
 
