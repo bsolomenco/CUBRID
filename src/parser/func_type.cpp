@@ -664,7 +664,7 @@ const func_signature* Func::Node::get_signature(const std::vector<func_signature
                     auto tt = std::time(nullptr);
                     strftime(buf, sizeof(buf), "%F %T", std::localtime(&tt));
                     printf("%s Func::Node::get_signature() statement: %s\n", buf, m_node->sql_user_text);
-                    er_set(ER_NOTIFICATION_SEVERITY, __FILE__, __LINE__, NO_ERROR, 0);
+                    //er_set(ER_NOTIFICATION_SEVERITY, __FILE__, __LINE__, NO_ERROR, 0); => SIGABRT
                 }
                 sb.clear();
                 pt_cat_error(m_parser,
