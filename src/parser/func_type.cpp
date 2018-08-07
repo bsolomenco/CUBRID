@@ -3,6 +3,10 @@
 #include "parse_tree.h"
 #include "parser.h"
 #include "parser_message.h"
+#include <chrono>
+#include <ctime>
+#include <locale>
+#include <time.h>
 
 #if 0 //PT_TYPE_MAYBE
 - for the moment I don't see how to eliminate PT_TYPE_MAYBE from functions with multiple signature
@@ -655,9 +659,13 @@ const func_signature* Func::Node::get_signature(const std::vector<func_signature
             //... accumulate error messages
             if (!matchEquivalent && !matchCastable) //current arg doesn' match => current signature doesn't match
             {
-                //er_set(ER_NOTIFICATION_SEVERITY, __FILE__, __LINE__, );
-                printf("[%s()] statement: %s%s\n", __func__, m_node->sql_user_text);
-
+                {
+                    char buf[1024] = {0};
+                    auto tt = std::time(nullptr);
+                    strftime(buf, sizeof(buf), "%F %T", std::localtime(&tt));
+                    printf("%s Func::Node::get_signature() statement: %s\n", buf, m_node->sql_user_text);
+                    er_set(ER_NOTIFICATION_SEVERITY, __FILE__, __LINE__, NO_ERROR, 0);
+                }
                 sb.clear();
                 pt_cat_error(m_parser,
                 arg,
