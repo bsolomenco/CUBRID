@@ -660,7 +660,7 @@ const func_signature* Func::Node::get_signature(const std::vector<func_signature
             if (!matchEquivalent && !matchCastable) //current arg doesn' match => current signature doesn't match
             {
                 {
-                    char buf[1024] = {0};
+                    char buf[64] = {0};
                     auto tt = std::time(nullptr);
                     strftime(buf, sizeof(buf), "%F %T", std::localtime(&tt));
                     printf("%s Func::Node::get_signature() statement: %s\n", buf, m_node->sql_user_text);
