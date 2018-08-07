@@ -2055,7 +2055,7 @@ sm_final ()
   SM_CLASS *class_;
   DB_OBJLIST *cl;
 
-  printf("[sm_final()]\n");
+  printf("[%s()]\n", __func__);
 
 #if defined(WINDOWS)
   /* unload any DLL's we may have opened for methods */

@@ -1445,6 +1445,7 @@ error:
 int
 boot_shutdown_client (bool is_er_final)
 {
+  printf("[%s()]\n", __func__);
   if (BOOT_IS_CLIENT_RESTARTED ())
     {
       /* 
@@ -1507,6 +1508,7 @@ boot_shutdown_client (bool is_er_final)
 static void
 boot_shutdown_client_at_exit (void)
 {
+  printf("[%s()]\n", __func__);
   if (BOOT_IS_CLIENT_RESTARTED () && boot_Process_id == getpid ())
     {
       /* Avoid infinite looping if someone calls exit during shutdown */
@@ -1582,6 +1584,7 @@ boot_server_die_or_changed (void)
 void
 boot_client_all_finalize (bool is_er_final)
 {
+  printf("[%s()]\n", __func__);
   if (BOOT_IS_CLIENT_RESTARTED () || boot_Is_client_all_final == false)
     {
       if (boot_Server_credential.db_full_name)
